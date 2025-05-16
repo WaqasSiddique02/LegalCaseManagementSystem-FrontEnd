@@ -1,0 +1,55 @@
+﻿<div id="sidebar" class="@(IsSidebarHidden ? "hide" : "show")">
+    <a href="/" class="brand">
+        <i class='bx bxs-smile bx-lg'></i>
+        <span class="text">Admin</span>
+    </a>
+    <ul class="side-menu top">
+        @foreach (var item in MenuItems)
+        {
+            <li class="@(CurrentPage == item.Name ? "active" : "")">
+                <a href="@item.Url">
+                    <i class='bx @item.Icon bx-sm'></i>
+                    <span class="text">@item.Name</span>
+                </a>
+            </li>
+        }
+    </ul>
+    <ul class="side-menu bottom">
+        <li class="@(CurrentPage == "Settings" ? "active" : "")">
+            <a href="/settings">
+                <i class='bx bxs-cog bx-sm bx-spin-hover'></i>
+                <span class="text">Settings</span>
+            </a>
+        </li>
+        <li>
+            <a href="/logout" class="logout">
+                <i class='bx bx-power-off bx-sm bx-burst-hover'></i>
+                <span class="text">Logout</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+@code {
+    [Parameter]
+    public string CurrentPage { get; set; } = "Dashboard";
+
+    [Parameter]
+    public bool IsSidebarHidden { get; set; } = false;
+
+    private List<MenuItem> MenuItems = new()
+    {
+        new MenuItem { Name = "Dashboard", Icon = "bxs-dashboard", Url = "/dashboard" },
+        new MenuItem { Name = "My Store", Icon = "bxs-shopping-bag-alt", Url = "/store" },
+        new MenuItem { Name = "Analytics", Icon = "bxs-doughnut-chart", Url = "/analytics" },
+        new MenuItem { Name = "Message", Icon = "bxs-message-dots", Url = "/message" },
+        new MenuItem { Name = "Team", Icon = "bxs-group", Url = "/team" }
+    };
+
+    private class MenuItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Icon { get; set; } = string.Empty;
+        public string Url { get; set; } = string.Empty;
+    }
+}

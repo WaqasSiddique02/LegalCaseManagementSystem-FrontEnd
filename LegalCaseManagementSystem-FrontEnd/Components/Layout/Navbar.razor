@@ -1,0 +1,127 @@
+﻿<nav class="navbar">
+    <i class='bx bx-menu bx-sm' @onclick="ToggleSidebar"></i>
+    <a href="#" class="nav-link">Categories</a>
+
+    <div class="form-container">
+        <form class="@(IsSearchFormVisible ? "show" : "")" @onsubmit="HandleSearch">
+            <div class="form-input">
+                <input type="text" @bind="SearchQuery" placeholder="Search..." />
+                <button type="button" class="search-btn" @onclick="ToggleSearchForm">
+                    <i class='bx @(IsSearchFormVisible ? "bx-x" : "bx-search")'></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="switch-lm" @onclick="ToggleDarkMode">
+        <i class="bx bxs-moon"></i>
+        <i class="bx bx-sun"></i>
+        <div class="ball @(IsDarkMode ? "checked" : "")"></div>
+    </div>
+
+    <div class="notification" @onclick="ToggleNotificationMenu">
+        <i class='bx bxs-bell bx-tada-hover'></i>
+        <span class="num">@Notifications.Count</span>
+    </div>
+
+    @if (IsNotificationMenuVisible)
+    {
+        <div class="notification-menu show">
+            <ul>
+                @foreach (var notification in Notifications)
+                {
+                    <li>@notification</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="profile" @onclick="ToggleProfileMenu">
+        <img src="https://placehold.co/600x400/png" alt="Profile">
+    </div>
+
+    @if (IsProfileMenuVisible)
+    {
+        <div class="profile-menu show">
+            <ul>
+                @foreach (var item in ProfileMenuItems)
+                {
+                    <li><a href="@item.Url">@item.Name</a></li>
+                }
+            </ul>
+        </div>
+    }
+</nav>
+
+@code {
+    [Parameter]
+    public EventCallback<bool> OnDarkModeToggle { get; set; }
+
+    [Parameter]
+    public EventCallback ToggleSidebar { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> DarkModeToggled { get; set; }
+
+    [Parameter]
+    public bool IsDarkMode { get; set; }
+
+    private bool IsSearchFormVisible { get; set; }
+    private bool IsNotificationMenuVisible { get; set; }
+    private bool IsProfileMenuVisible { get; set; }
+
+    private string SearchQuery { get; set; } = string.Empty;
+
+    private List<string> Notifications { get; set; } = new()
+    {
+        "New message from John",
+        "Your order has been shipped",
+        "New comment on your post",
+        "Update available for your app",
+        "Reminder: Meeting at 3PM"
+    };
+
+    private List<MenuItem> ProfileMenuItems { get; set; } = new()
+    {
+        new MenuItem { Name = "My Profile", Url = "/profile" },
+        new MenuItem { Name = "Settings", Url = "/settings" },
+        new MenuItem { Name = "Log Out", Url = "/logout" }
+    };
+
+    private async Task ToggleDarkMode()
+    {
+        IsDarkMode = !IsDarkMode;
+        await OnDarkModeToggle.InvokeAsync(IsDarkMode);
+    }
+
+    private void ToggleSearchForm()
+    {
+        IsSearchFormVisible = !IsSearchFormVisible;
+    }
+
+    private void HandleSearch()
+    {
+        // Handle search logic here
+        Console.WriteLine($"Searching for: {SearchQuery}");
+    }
+
+    private void ToggleNotificationMenu()
+    {
+        IsNotificationMenuVisible = !IsNotificationMenuVisible;
+        IsProfileMenuVisible = false;
+    }
+
+    private void ToggleProfileMenu()
+    {
+        IsProfileMenuVisible = !IsProfileMenuVisible;
+        IsNotificationMenuVisible = false;
+    }
+
+    private class MenuItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Url { get; set; } = string.Empty;
+    }
+
+
+}
