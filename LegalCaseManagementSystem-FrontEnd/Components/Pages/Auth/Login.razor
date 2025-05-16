@@ -4,11 +4,10 @@
 @using System.Net.Http.Json
 @inject HttpClient Http
 @inject IOptions<ApiSettings> ApiSettings
+@inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 
-<link href="/login.css" rel="stylesheet" />
-
-<div class="login-page">
+<div class="login-container">
     <div class="login-card">
         <div class="login-header">
             <h2>LegalCase Management</h2>
@@ -19,7 +18,7 @@
             @if (isLoggedIn)
             {
                 <div class="login-success">
-                    <i class="bi bi-check-circle-fill"></i> Login successful! Welcome, @loginModel.Username.
+                    <i class="bi bi-check-circle-fill"></i> Login successful! Redirecting...
                 </div>
             }
             else
@@ -27,40 +26,41 @@
                 <h4>Welcome Back!</h4>
                 <p class="register-link">Don't have an account? <a href="/register">Create a new account</a>, it's FREE!</p>
 
-                <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync" FormName="loginForm">
+                <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync">
                     <DataAnnotationsValidator />
                     <ValidationSummary />
 
                     <div class="input-group">
                         <InputText class="form-input" placeholder="Email Address" @bind-Value="loginModel.Username" />
+                        <ValidationMessage For="@(() => loginModel.Username)" />
                     </div>
 
                     <div class="input-group">
                         <InputText type="password" class="form-input" placeholder="Password" @bind-Value="loginModel.Password" />
+                        <ValidationMessage For="@(() => loginModel.Password)" />
                     </div>
 
                     <div class="forgot-password">
                         <a href="/forgot-password">Forgot password?</a>
                     </div>
 
-                    <button class="login-button" type="submit">
-                        <i class="bi bi-box-arrow-in-right"></i> Login Now
+                    <button class="login-button" type="submit" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-box-arrow-in-right"></i>
+                        }
+                        Login Now
                     </button>
                 </EditForm>
-
-                <div class="login-divider">
-                    <span>or</span>
-                </div>
-
-                <button class="google-button">
-                    <img src="" width="20" height="20" alt="">
-                    Login with Google
-                </button>
 
                 @if (loginFailed)
                 {
                     <div class="login-error">
-                        <i class="bi bi-exclamation-triangle-fill"></i> Invalid email or password. Please try again.
+                        <i class="bi bi-exclamation-triangle-fill"></i> @errorMessage
                     </div>
                 }
             }
@@ -73,42 +73,70 @@
 </div>
 
 @code {
-    private LoginModel loginModel = new LoginModel();
+    private LoginModel loginModel = new();
     private bool isLoggedIn = false;
     private bool loginFailed = false;
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
 
     private async Task HandleLoginAsync()
     {
+        isLoading = true;
+        loginFailed = false;
+
         try
         {
             var apiUrl = ApiSettings.Value?.BaseUrl ?? "https://defaulturl.com/api";
-
             var response = await Http.PostAsJsonAsync($"{apiUrl}/Auth/login", loginModel);
 
             if (response.IsSuccessStatusCode)
             {
-                isLoggedIn = true;
-                loginFailed = false;
+                var authResponse = await response.Content.ReadFromJsonAsync<AuthResponseDTO>();
+
+                if (authResponse != null)
+                {
+                    // Store token and user info (implement your auth state management)
+                    isLoggedIn = true;
+                    await Task.Delay(1500); // Show success message briefly
+                    NavigationManager.NavigateTo("/", forceLoad: true);
+                }
             }
             else
             {
-                isLoggedIn = false;
+                var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                errorMessage = errorResponse?.Message ?? "Invalid username or password";
                 loginFailed = true;
-
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Login failed: {errorContent}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Login API call failed: {ex.Message}");
+            errorMessage = "An error occurred during login. Please try again.";
             loginFailed = true;
+            Console.WriteLine($"Login error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
     public class LoginModel
     {
         public string Username { get; set; } = string.Empty;
+
         public string Password { get; set; } = string.Empty;
+    }
+
+    public class AuthResponseDTO
+    {
+        public string Token { get; set; } = string.Empty;
+        public DateTime Expiration { get; set; }
+        public string Role { get; set; } = string.Empty;
+        public int UserId { get; set; }
+    }
+
+    public class ErrorResponse
+    {
+        public string Message { get; set; } = string.Empty;
     }
 }

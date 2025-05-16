@@ -1,0 +1,185 @@
+﻿@page "/register"
+@using LegalCaseManagementSystem_FrontEnd.Configuration
+@using Microsoft.Extensions.Options
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject IOptions<ApiSettings> ApiSettings
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<div class="register-container">
+    <div class="register-card">
+        <div class="register-header">
+            <h2>Create Your Account</h2>
+            <p>Join our legal case management system to streamline your workflow</p>
+        </div>
+
+        <div class="register-content">
+            @if (registrationSuccess)
+            {
+                <div class="register-success">
+                    <i class="bi bi-check-circle-fill"></i> Registration successful! Welcome, @registrationModel.Username.
+                    <p>You will be redirected to the login page shortly...</p>
+                </div>
+            }
+            else
+            {
+                <h4>Register Now</h4>
+                <p class="register-link">Already have an account? <a href="/login">Sign in here</a></p>
+
+                <EditForm Model="registrationModel" OnValidSubmit="HandleRegistrationAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="input-group">
+                        <InputText class="form-input" placeholder="Username" @bind-Value="registrationModel.Username" />
+                        <ValidationMessage For="@(() => registrationModel.Username)" />
+                    </div>
+
+                    <div class="input-group">
+                        <InputText class="form-input" placeholder="Email Address" @bind-Value="registrationModel.Email" />
+                        <ValidationMessage For="@(() => registrationModel.Email)" />
+                    </div>
+
+                    <div class="input-group">
+                        <InputText type="password" class="form-input" placeholder="Password" @bind-Value="registrationModel.Password" />
+                        <ValidationMessage For="@(() => registrationModel.Password)" />
+                    </div>
+
+                    <div class="input-group">
+                        <InputText class="form-input" placeholder="Full Name" @bind-Value="registrationModel.FullName" />
+                        <ValidationMessage For="@(() => registrationModel.FullName)" />
+                    </div>
+
+                    <div class="input-group">
+                        <InputSelect class="form-input" @bind-Value="registrationModel.UserType" onchange="HandleUserTypeChange">
+                            <option value="">Select User Type</option>
+                            <option value="Client">Client</option>
+                            <option value="Lawyer">Lawyer</option>
+                        </InputSelect>
+                        <ValidationMessage For="@(() => registrationModel.UserType)" />
+                    </div>
+
+                    @if (showLawyerFields)
+                    {
+                        <div class="input-group">
+                            <InputText class="form-input" placeholder="Specialization" @bind-Value="registrationModel.Specialization" />
+                        </div>
+                    }
+
+                    @if (showClientFields)
+                    {
+                        <div class="input-group">
+                            <InputText class="form-input" placeholder="Contact Info" @bind-Value="registrationModel.ContactInfo" />
+                        </div>
+                    }
+
+                    <button class="register-button" type="submit" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-person-plus-fill"></i>
+                        }
+                        Register Now
+                    </button>
+                </EditForm>
+
+                @if (registrationError)
+                {
+                    <div class="register-error">
+                        <i class="bi bi-exclamation-triangle-fill"></i> @errorMessage
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="register-footer">
+            © @DateTime.Now.Year LegalCase Management. All rights reserved.
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegistrationModel registrationModel = new();
+    private bool registrationSuccess = false;
+    private bool registrationError = false;
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+    private bool showLawyerFields = false;
+    private bool showClientFields = false;
+
+    private void HandleUserTypeChange(ChangeEventArgs e)
+    {
+        registrationModel.UserType = e.Value?.ToString() ?? string.Empty;
+        showLawyerFields = registrationModel.UserType == "Lawyer";
+        showClientFields = registrationModel.UserType == "Client";
+        StateHasChanged();
+    }
+
+    private async Task HandleRegistrationAsync()
+    {
+        registrationError = false;
+        isLoading = true;
+
+        if (string.IsNullOrEmpty(registrationModel.UserType))
+        {
+            errorMessage = "Please select a user type";
+            registrationError = true;
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            var apiUrl = ApiSettings.Value?.BaseUrl ?? "https://defaulturl.com/api";
+            var response = await Http.PostAsJsonAsync($"{apiUrl}/Auth/register", registrationModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                registrationSuccess = true;
+                await Task.Delay(3000);
+                NavigationManager.NavigateTo("/login");
+            }
+            else
+            {
+                var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                errorMessage = errorResponse?.Message ?? "Registration failed. Please try again.";
+                registrationError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "An error occurred during registration. Please try again.";
+            registrationError = true;
+            Console.WriteLine($"Registration error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public class RegistrationModel
+    {
+        public string Username { get; set; } = string.Empty;
+
+        public string Email { get; set; } = string.Empty;
+
+        public string Password { get; set; } = string.Empty;
+
+        public string FullName { get; set; } = string.Empty;
+
+        public string UserType { get; set; } = string.Empty;
+
+        public string? Specialization { get; set; }
+        public string? ContactInfo { get; set; }
+    }
+
+    public class ErrorResponse
+    {
+        public string Message { get; set; } = string.Empty;
+    }
+}
