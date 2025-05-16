@@ -1,0 +1,83 @@
+﻿@page "/login"
+@using LegalCaseManagementSystem_FrontEnd.Configuration
+@using Microsoft.Extensions.Options
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject IOptions<ApiSettings> ApiSettings
+@rendermode InteractiveServer
+
+<h3>Login</h3>
+
+@if (isLoggedIn)
+{
+    <div class="alert alert-success">
+        ✅ Login successful! Welcome, @loginModel.Username.
+    </div>
+}
+else
+{
+    <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync" FormName="loginForm">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label>Username:</label>
+            <InputText class="form-control" @bind-Value="loginModel.Username" />
+        </div>
+
+        <div class="form-group">
+            <label>Password:</label>
+            <InputText type="password" class="form-control" @bind-Value="loginModel.Password" />
+        </div>
+
+        <button class="btn btn-primary mt-2" type="submit">Login</button>
+    </EditForm>
+
+    @if (loginFailed)
+    {
+        <div class="alert alert-danger mt-2">
+            ❌ Invalid username or password.
+        </div>
+    }
+}
+
+@code {
+    private LoginModel loginModel = new LoginModel();
+    private bool isLoggedIn = false;
+    private bool loginFailed = false;
+
+    private async Task HandleLoginAsync()
+    {
+        try
+        {
+            var apiUrl = ApiSettings.Value?.BaseUrl ?? "https://defaulturl.com/api";
+
+            var response = await Http.PostAsJsonAsync($"{apiUrl}/Auth/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                isLoggedIn = true;
+                loginFailed = false;
+            }
+            else
+            {
+                isLoggedIn = false;
+                loginFailed = true;
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Login failed: {errorContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Login API call failed: {ex.Message}");
+            loginFailed = true;
+        }
+    }
+
+    public class LoginModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}
