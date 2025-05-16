@@ -1,20 +1,28 @@
 ﻿@inherits LayoutComponentBase
-
-<div class="page">
+<div class="page @(IsDarkMode ? "dark" : "")">
     <Sidebar CurrentPage="@CurrentPage" IsSidebarHidden="@IsSidebarHidden" />
     <section id="content" class="@(IsSidebarHidden ? "expanded" : "")">
-        <Navbar ToggleSidebar="ToggleSidebar" />
+        <Navbar ToggleSidebar="ToggleSidebar"
+                DarkModeToggled="HandleDarkModeToggle"
+                IsDarkMode="IsDarkMode" />
         @Body
     </section>
 </div>
 
 @code {
     private bool IsSidebarHidden { get; set; } = false;
+    private bool IsDarkMode { get; set; } = false;
     private string CurrentPage { get; set; } = "Dashboard";
 
     private async Task ToggleSidebar()
     {
         IsSidebarHidden = !IsSidebarHidden;
+        StateHasChanged();
+    }
+
+    private void HandleDarkModeToggle(bool isDarkMode)
+    {
+        IsDarkMode = isDarkMode;
         StateHasChanged();
     }
 }

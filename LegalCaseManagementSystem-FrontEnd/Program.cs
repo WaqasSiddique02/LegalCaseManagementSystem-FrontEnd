@@ -1,10 +1,20 @@
+using LegalCaseManagementSystem_FrontEnd.Configuration;
 using LegalCaseManagementSystem_FrontEnd.Components;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+
+// Register ApiSettings from appsettings.json
+builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
+
+// Register HttpClient
+builder.Services.AddHttpClient();  // Built-in HttpClient
+
 
 var app = builder.Build();
 

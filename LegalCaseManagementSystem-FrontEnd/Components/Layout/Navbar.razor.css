@@ -1,5 +1,4 @@
-﻿/* Navbar Styling */
-nav {
+﻿nav {
     height: 56px;
     background: var(--light);
     padding: 0 24px;
@@ -185,6 +184,44 @@ nav {
                 font-size: 16px;
                 text-decoration: none;
             }
+
+    nav .swith-lm {
+        background-color: var(--grey);
+        border-radius: 50px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 3px;
+        position: relative;
+        height: 21px;
+        width: 45px;
+        transform: scale(1.5);
+    }
+
+        nav .swith-lm .ball {
+            background-color: var(--blue);
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            height: 20px;
+            width: 20px;
+            transform: translateX(0px);
+            transition: transform 0.2s linear;
+        }
+
+            nav .swith-lm .ball.checked {
+                transform: translateX(22px);
+            }
+
+.bxs-moon {
+    color: var(--yellow);
+}
+
+.bx-sun {
+    color: var(--orange);
+}
 
 @media screen and (max-width: 768px) {
     nav .nav-link {

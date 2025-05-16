@@ -1,7 +1,8 @@
-﻿<div id="sidebar" class="@(IsSidebarHidden ? "hide" : "show")">
+﻿@* Sidebar component for navigation *@
+<div id="sidebar" class="@(IsSidebarHidden ? "hide" : "show")">
     <a href="/" class="brand">
         <i class='bx bxs-smile bx-lg'></i>
-        <span class="text">Admin</span>
+        <span class="text">AdminHub</span>
     </a>
     <ul class="side-menu top">
         @foreach (var item in MenuItems)

@@ -13,7 +13,7 @@
         </form>
     </div>
 
-    <div class="switch-lm" @onclick="ToggleDarkMode">
+    <div class="switch-lm">
         <i class="bx bxs-moon"></i>
         <i class="bx bx-sun"></i>
         <div class="ball @(IsDarkMode ? "checked" : "")"></div>
@@ -57,6 +57,12 @@
     [Parameter]
     public EventCallback<bool> OnDarkModeToggle { get; set; }
 
+    private async Task ToggleDarkMode()
+    {
+        IsDarkMode = !IsDarkMode;
+        await OnDarkModeToggle.InvokeAsync(IsDarkMode);
+    }
+
     [Parameter]
     public EventCallback ToggleSidebar { get; set; }
 
@@ -88,11 +94,6 @@
         new MenuItem { Name = "Log Out", Url = "/logout" }
     };
 
-    private async Task ToggleDarkMode()
-    {
-        IsDarkMode = !IsDarkMode;
-        await OnDarkModeToggle.InvokeAsync(IsDarkMode);
-    }
 
     private void ToggleSearchForm()
     {
@@ -122,6 +123,4 @@
         public string Name { get; set; } = string.Empty;
         public string Url { get; set; } = string.Empty;
     }
-
-
 }

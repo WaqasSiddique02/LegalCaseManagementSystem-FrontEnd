@@ -1,0 +1,114 @@
+﻿@page "/login"
+@using LegalCaseManagementSystem_FrontEnd.Configuration
+@using Microsoft.Extensions.Options
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject IOptions<ApiSettings> ApiSettings
+@rendermode InteractiveServer
+
+<link href="/login.css" rel="stylesheet" />
+
+<div class="login-page">
+    <div class="login-card">
+        <div class="login-header">
+            <h2>LegalCase Management</h2>
+            <p>Streamline your legal workflow with our comprehensive case management solution</p>
+        </div>
+
+        <div class="login-content">
+            @if (isLoggedIn)
+            {
+                <div class="login-success">
+                    <i class="bi bi-check-circle-fill"></i> Login successful! Welcome, @loginModel.Username.
+                </div>
+            }
+            else
+            {
+                <h4>Welcome Back!</h4>
+                <p class="register-link">Don't have an account? <a href="/register">Create a new account</a>, it's FREE!</p>
+
+                <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync" FormName="loginForm">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="input-group">
+                        <InputText class="form-input" placeholder="Email Address" @bind-Value="loginModel.Username" />
+                    </div>
+
+                    <div class="input-group">
+                        <InputText type="password" class="form-input" placeholder="Password" @bind-Value="loginModel.Password" />
+                    </div>
+
+                    <div class="forgot-password">
+                        <a href="/forgot-password">Forgot password?</a>
+                    </div>
+
+                    <button class="login-button" type="submit">
+                        <i class="bi bi-box-arrow-in-right"></i> Login Now
+                    </button>
+                </EditForm>
+
+                <div class="login-divider">
+                    <span>or</span>
+                </div>
+
+                <button class="google-button">
+                    <img src="" width="20" height="20" alt="">
+                    Login with Google
+                </button>
+
+                @if (loginFailed)
+                {
+                    <div class="login-error">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Invalid email or password. Please try again.
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="login-footer">
+            © @DateTime.Now.Year LegalCase Management. All rights reserved.
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new LoginModel();
+    private bool isLoggedIn = false;
+    private bool loginFailed = false;
+
+    private async Task HandleLoginAsync()
+    {
+        try
+        {
+            var apiUrl = ApiSettings.Value?.BaseUrl ?? "https://defaulturl.com/api";
+
+            var response = await Http.PostAsJsonAsync($"{apiUrl}/Auth/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                isLoggedIn = true;
+                loginFailed = false;
+            }
+            else
+            {
+                isLoggedIn = false;
+                loginFailed = true;
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Login failed: {errorContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Login API call failed: {ex.Message}");
+            loginFailed = true;
+        }
+    }
+
+    public class LoginModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}
