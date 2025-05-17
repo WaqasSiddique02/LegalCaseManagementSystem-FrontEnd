@@ -1,142 +1,91 @@
 ﻿@page "/login"
-@using LegalCaseManagementSystem_FrontEnd.Configuration
-@using Microsoft.Extensions.Options
-@using System.Net.Http.Json
+@using LegalCaseManagementSystem_FrontEnd.Models.Auth
 @inject HttpClient Http
-@inject IOptions<ApiSettings> ApiSettings
-@inject NavigationManager NavigationManager
+@inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<div class="login-container">
-    <div class="login-card">
-        <div class="login-header">
-            <h2>LegalCase Management</h2>
-            <p>Streamline your legal workflow with our comprehensive case management solution</p>
+<div class="login-page">
+    <div class="grid-container">
+        <div class="image-container">
+            <img src="/images/weightscale.png" alt="Login page image" />
         </div>
+        <div class="login-container">
+            <h2>Sign In</h2>
+            <h3>Welcome Mate</h3>
 
-        <div class="login-content">
-            @if (isLoggedIn)
+            <label for="username">Username</label>
+            <input type="text" @bind="loginModel.Username" id="username" placeholder="Enter your username" required />
+
+            <label for="password">Password</label>
+            <input type="password" @bind="loginModel.Password" id="password" placeholder="Enter your password" required/>
+
+            <button @onclick="HandleLogin">Login</button>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
             {
-                <div class="login-success">
-                    <i class="bi bi-check-circle-fill"></i> Login successful! Redirecting...
-                </div>
+                <div class="error-message" style="color:red">@errorMessage</div>
             }
-            else
-            {
-                <h4>Welcome Back!</h4>
-                <p class="register-link">Don't have an account? <a href="/register">Create a new account</a>, it's FREE!</p>
 
-                <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
-
-                    <div class="input-group">
-                        <InputText class="form-input" placeholder="Email Address" @bind-Value="loginModel.Username" />
-                        <ValidationMessage For="@(() => loginModel.Username)" />
-                    </div>
-
-                    <div class="input-group">
-                        <InputText type="password" class="form-input" placeholder="Password" @bind-Value="loginModel.Password" />
-                        <ValidationMessage For="@(() => loginModel.Password)" />
-                    </div>
-
-                    <div class="forgot-password">
-                        <a href="/forgot-password">Forgot password?</a>
-                    </div>
-
-                    <button class="login-button" type="submit" disabled="@isLoading">
-                        @if (isLoading)
-                        {
-                            <span class="spinner-border spinner-border-sm" role="status"></span>
-                        }
-                        else
-                        {
-                            <i class="bi bi-box-arrow-in-right"></i>
-                        }
-                        Login Now
-                    </button>
-                </EditForm>
-
-                @if (loginFailed)
-                {
-                    <div class="login-error">
-                        <i class="bi bi-exclamation-triangle-fill"></i> @errorMessage
-                    </div>
-                }
-            }
-        </div>
-
-        <div class="login-footer">
-            © @DateTime.Now.Year LegalCase Management. All rights reserved.
+            <h5>Don't have an account? <a href="/register">Sign Up</a></h5>
         </div>
     </div>
 </div>
 
 @code {
-    private LoginModel loginModel = new();
-    private bool isLoggedIn = false;
-    private bool loginFailed = false;
-    private bool isLoading = false;
+    private LoginModel loginModel = new LoginModel();
     private string errorMessage = string.Empty;
 
-    private async Task HandleLoginAsync()
+    private async Task HandleLogin()
     {
-        isLoading = true;
-        loginFailed = false;
+        errorMessage = string.Empty;
 
         try
         {
-            var apiUrl = ApiSettings.Value?.BaseUrl ?? "https://defaulturl.com/api";
-            var response = await Http.PostAsJsonAsync($"{apiUrl}/Auth/login", loginModel);
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(loginModel.Username))
+            {
+                errorMessage = "Username is required";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(loginModel.Password))
+            {
+                errorMessage = "Password is required";
+                return;
+            }
+
+            Console.WriteLine($"Attempting login with username: {loginModel.Username}"); // Debug output
+
+            var response = await Http.PostAsJsonAsync("/api/Auth/login", new
+            {
+                Username = loginModel.Username,
+                Password = loginModel.Password
+            });
+
+            Console.WriteLine($"Response status: {response.StatusCode}"); // Debug output
 
             if (response.IsSuccessStatusCode)
             {
-                var authResponse = await response.Content.ReadFromJsonAsync<AuthResponseDTO>();
-
-                if (authResponse != null)
-                {
-                    // Store token and user info (implement your auth state management)
-                    isLoggedIn = true;
-                    await Task.Delay(1500); // Show success message briefly
-                    NavigationManager.NavigateTo("/", forceLoad: true);
-                }
+                var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
+                Console.WriteLine("Login successful"); // Debug output
+                Navigation.NavigateTo("/");
             }
             else
             {
-                var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponse>();
-                errorMessage = errorResponse?.Message ?? "Invalid username or password";
-                loginFailed = true;
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error response: {errorContent}"); // Debug output
+                errorMessage = "Invalid username or password";
             }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"HTTP Request Exception: {httpEx.Message}");
+            errorMessage = "Unable to connect to server. Please check your connection.";
         }
         catch (Exception ex)
         {
-            errorMessage = "An error occurred during login. Please try again.";
-            loginFailed = true;
-            Console.WriteLine($"Login error: {ex.Message}");
+            Console.WriteLine($"Exception: {ex.ToString()}");
+            errorMessage = $"Login failed: {ex.Message}";
         }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    public class LoginModel
-    {
-        public string Username { get; set; } = string.Empty;
-
-        public string Password { get; set; } = string.Empty;
-    }
-
-    public class AuthResponseDTO
-    {
-        public string Token { get; set; } = string.Empty;
-        public DateTime Expiration { get; set; }
-        public string Role { get; set; } = string.Empty;
-        public int UserId { get; set; }
-    }
-
-    public class ErrorResponse
-    {
-        public string Message { get; set; } = string.Empty;
     }
 }

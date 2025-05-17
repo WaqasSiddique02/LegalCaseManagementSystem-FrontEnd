@@ -11,6 +11,10 @@ builder.Services.AddRazorComponents()
 
 // Register ApiSettings from appsettings.json
 builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri("https://localhost:7285/")
+});
 
 // Register HttpClient
 builder.Services.AddHttpClient();  // Built-in HttpClient
