@@ -1,11 +1,14 @@
-﻿/* Dashboard Main Content */
+﻿
 main {
     padding: 20px;
+    margin-left:15%;
+    
 }
 
 /* Card Styles */
 .card-list {
     margin-bottom: 30px;
+    margin-top: 5%;
 }
 
 .card {
