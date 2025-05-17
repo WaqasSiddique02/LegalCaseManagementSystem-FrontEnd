@@ -1,139 +1,282 @@
-﻿<main role="main" class="col-md-9 ml-sm-auto col-lg-10 my-3">  
-    <div class="card-list">
-        <div class="row">
-            <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
-                <div class="card blue">
-                    <div class="title">All Cases</div>
-                    <i class="zmdi zmdi-upload"></i>
-                    <div class="value">89</div>
-                    <div class="stat"><b>13</b>% increase</div>
-                </div>
+﻿@using LegalCaseManagementSystem_FrontEnd.Models
+@inject HttpClient Http
+
+<main role="main" class="col-md-9 ml-sm-auto col-lg-10 my-3">
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="sr-only">Loading...</span>
             </div>
-            <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
-                <div class="card green">
-                    <div class="title">Pending cases</div>
-                    <i class="zmdi zmdi-upload"></i>
-                    <div class="value">5,990</div>
-                    <div class="stat"><b>4</b>% increase</div>
+        </div>
+    }
+    else if (hasError)
+    {
+        <div class="alert alert-danger">
+            Error loading data. Please try again later.
+        </div>
+    }
+    else
+    {
+        <div class="card-list">
+            <div class="row">
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+                    <div class="card blue">
+                        <div class="title">All Cases</div>
+                        <div class="value">@(cases?.Count ?? 0)</div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
-                <div class="card orange">
-                    <div class="title">Completed Cases</div>
-                    <i class="zmdi zmdi-download"></i>
-                    <div class="value">$80,990</div>
-                    <div class="stat"><b>13</b>% decrease</div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+                    <div class="card green">
+                        <div class="title">Pending cases</div>
+                        <div class="value">@(cases?.Count(c => c?.Status == "Pending") ?? 0)</div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
-                <div class="card red">
-                    <div class="title">Active</div>
-                    <i class="zmdi zmdi-download"></i>
-                    <div class="value">3</div>
-                    <div class="stat"><b>13</b>% decrease</div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+                    <div class="card orange">
+                        <div class="title">Completed Cases</div>
+                        <div class="value">@(cases?.Count(c => c?.Status == "Completed") ?? 0)</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+                    <div class="card red">
+                        <div class="title">Active Cases</div>
+                        <div class="value">@(cases?.Count(c => c?.Status == "Active") ?? 0)</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="projects mb-4">
-        <div class="projects-inner">
-            <header class="projects-header">
-                <div class="title">Ongoing Projects</div>
-                <div class="count">| 32 Projects</div>
-                <i class="zmdi zmdi-download"></i>
-            </header>
-            <table class="projects-table">
-                <thead>
-                    <tr>
-                        <th>Case</th>
-                        <th>Hearing Date</th>
-                        <th>Client</th>
-                        <th>Lawyer</th>
-                        <th>Budget</th>
-                        <th>Status</th>
-                        <th class="text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            <p>Murder case</p>
-                        </td>
-                        <td>
-                            <p>17th Oct, 15</p>
-                            <p class="text-danger">Overdue</p>
-                        </td>
-                        <td>
-                            <p>Waqas</p>
-                        </td>
+        <div class="projects mb-4">
+            <div class="projects-inner">
+                <header class="projects-header">
+                    <div class="title">Recent Cases</div>
+                    <div class="count">| @(recentCases?.Count ?? 0) Cases</div>
+                </header>
+                @if (recentCases?.Any() == true)
+                {
+                    <table class="projects-table">
+                        <thead>
+                            <tr>
+                                <th>Case</th>
+                                <th>Hearing Date</th>
+                                <th>Client</th>
+                                <th>Lawyer</th>
+                                <th>Status</th>
+                                <th class="text-right">Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var caseItem in recentCases!)
+                            {
+                                var hearing = caseHearings?.FirstOrDefault(h => h?.CaseId == caseItem?.CaseId);
+                                var client = clients?.FirstOrDefault(c => c?.ClientId == caseItem?.ClientId);
+                                var lawyer = lawyers?.FirstOrDefault(l => l?.LawyerId == caseItem?.LawyerId);
 
-                        <td>
-                            <div class="member-info">
-                                <p>Mudassir Shah</p>
+                                <tr>
+                                    <td>
+                                        <p>@(caseItem?.Title ?? "N/A")</p>
+                                    </td>
+                                    <td>
+                                        @if (hearing != null && hearing.HearingDate != default)
+                                        {
+                                            <p>@hearing.HearingDate.ToString("dd MMM, yy")</p>
+                                            @if (hearing.HearingDate < DateTime.Now)
+                                            {
+                                                <p class="text-danger">Overdue</p>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <p>No hearing scheduled</p>
+                                        }
+                                    </td>
+                                    <td>
+                                        <p>@(client?.FullName ?? "Unknown")</p>
+                                    </td>
+                                    <td>
+                                        <div class="member-info">
+                                            <p>@(lawyer?.FullName ?? "Unknown")</p>
+                                        </div>
+                                    </td>
+                                    <td class="status">
+                                        @{
+                                            var statusClass = "status-blue";
+                                            if (caseItem?.Status != null)
+                                            {
+                                                statusClass = caseItem.Status switch
+                                                {
+                                                    "Pending" => "status-red",
+                                                    "In Progress" => "status-orange",
+                                                    "Completed" => "status-green",
+                                                    _ => "status-blue"
+                                                };
+                                            }
+                                        }
+                                        <span class="status-text @statusClass">@(caseItem?.Status ?? "Unknown")</span>
+                                    </td>
+                                    <td>
+                                        <p>@(caseItem?.StartDate.ToString("dd-MM-yyyy") ?? "N/A")</p>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        No recent cases found.
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="chart-data">
+            <div class="row">
+                <div class="col-12 col-md-4">
+                    <div class="chart radar-chart dark">
+                        <h3 class="title">Pending Cases</h3>
+                        <p class="tagline">Current Year</p>
+                        @if (cases?.Any(c => c?.Status == "Pending") == true)
+                        {
+                            <div class="case-list">
+                                @foreach (var caseItem in cases.Where(c => c?.Status == "Pending").Take(5))
+                                {
+                                    var client = clients?.FirstOrDefault(c => c?.ClientId == caseItem?.ClientId);
+                                    <div class="case-item">
+                                        <strong>@(caseItem?.Title ?? "N/A")</strong>
+                                        <span>Client: @(client?.FullName ?? "Unknown")</span>
+                                    </div>
+                                }
                             </div>
-                        </td>
-                        <td>
-                            <p>$4,670</p>
-                            <p>Un Paid</p>
-                        </td>
-                        <td class="status">
-                            <span class="status-text status-orange">In progress</span>
-                        </td>
-                        <td>
-                            <select class="action-box">
-                                <option>Actions</option>
-                                <option>Pending</option>
-                                <option>Completed</option>
-                                <option>Due</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <!-- Additional rows would go here -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="chart-data">
-        <div class="row">
-            <div class="col-12 col-md-4">
-                <div class="chart radar-chart dark">
-                    <div class="actions">
-                        <button type="button" class="btn btn-link">
-                            <i class="zmdi zmdi-more-vert"></i>
-                        </button>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">No pending cases found</div>
+                        }
                     </div>
-                    <h3 class="title">Pending Cases</h3>
-                    <p class="tagline">Current Year</p>
-                    <canvas height="400" id="radarChartDark"></canvas>
                 </div>
-            </div>
-            <div class="col-12 col-md-4">
-                <div class="chart bar-chart light">
-                    <div class="actions">
-                        <button type="button" class="btn btn-link">
-                            <i class="zmdi zmdi-more-vert"></i>
-                        </button>
+                <div class="col-12 col-md-4">
+                    <div class="chart bar-chart light">
+                        <h3 class="title">Completed Cases</h3>
+                        <p class="tagline">Distribution</p>
+                        @if (cases?.Any(c => c?.Status == "Completed") == true)
+                        {
+                            <div class="case-list">
+                                @foreach (var caseItem in cases.Where(c => c?.Status == "Completed").Take(5))
+                                {
+                                    var client = clients?.FirstOrDefault(c => c?.ClientId == caseItem?.ClientId);
+                                    <div class="case-item">
+                                        <strong>@(caseItem?.Title ?? "N/A")</strong>
+                                        <span>Client: @(client?.FullName ?? "Unknown")</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">No completed cases found</div>
+                        }
                     </div>
-                    <h3 class="title">Completed Cases</h3>
-                    <p class="tagline">Distribution</p>
-                    <canvas height="400" id="barChartHDark"></canvas>
                 </div>
-            </div>
-            <div class="col-12 col-md-4">
-                <div class="chart doughnut-chart dark">
-                    <div class="actions">
-                        <button type="button" class="btn btn-link">
-                            <i class="zmdi zmdi-more-vert"></i>
-                        </button>
+                <div class="col-12 col-md-4">
+                    <div class="chart doughnut-chart dark">
+                        <h3 class="title">All Cases</h3>
+                        <p class="tagline">Current</p>
+                        @if (cases?.Any() == true)
+                        {
+                            <div class="case-list">
+                                @foreach (var caseItem in cases.Take(5))
+                                {
+                                    var client = clients?.FirstOrDefault(c => c?.ClientId == caseItem?.ClientId);
+                                    <div class="case-item">
+                                        <strong>@(caseItem?.Title ?? "N/A")</strong>
+                                        <span>Client: @(client?.FullName ?? "Unknown")</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">No cases found</div>
+                        }
                     </div>
-                    <h3 class="title">No Result Cases</h3>
-                    <p class="tagline">Current</p>
-                    <canvas height="400" id="doughnutChartDark"></canvas>
                 </div>
             </div>
         </div>
-    </div>
-    
+    }
 </main>
+
+@code {
+    private bool isLoading = true;
+    private bool hasError = false;
+    private List<Case>? cases = new List<Case>();
+    private List<Case>? recentCases = new List<Case>();
+    private List<Client>? clients = new List<Client>();
+    private List<Lawyer>? lawyers = new List<Lawyer>();
+    private List<Hearing>? caseHearings = new List<Hearing>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Initialize with empty lists to prevent null reference exceptions
+            cases = new List<Case>();
+            clients = new List<Client>();
+            lawyers = new List<Lawyer>();
+            caseHearings = new List<Hearing>();
+
+            var casesTask = SafeGetFromJsonAsync<List<Case>>("/api/Auth/login");
+            var clientsTask = SafeGetFromJsonAsync<List<Client>>("/api/Clients");
+            var lawyersTask = SafeGetFromJsonAsync<List<Lawyer>>("/api/Lawyers");
+
+            await Task.WhenAll(casesTask, clientsTask, lawyersTask);
+
+            cases = await casesTask ?? new List<Case>();
+            clients = await clientsTask ?? new List<Client>();
+            lawyers = await lawyersTask ?? new List<Lawyer>();
+
+            recentCases = cases?.Where(c => c != null)
+                              .OrderByDescending(c => c?.StartDate ?? DateTime.MinValue)
+                              .Take(5)
+                              .ToList() ?? new List<Case>();
+
+            if (recentCases?.Any() == true)
+            {
+                var hearingTasks = recentCases.Select(c =>
+                    SafeGetFromJsonAsync<List<Hearing>>($"/api/cases/{c?.CaseId}/Hearings")).ToList();
+
+                var hearingsResults = await Task.WhenAll(hearingTasks);
+                caseHearings = hearingsResults?.SelectMany(h => h ?? new List<Hearing>())
+                                             .Where(h => h != null)
+                                             .ToList() ?? new List<Hearing>();
+            }
+
+            isLoading = false;
+        }
+        catch (Exception ex)
+        {
+            isLoading = false;
+            hasError = true;
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+    }
+
+    private async Task<T?> SafeGetFromJsonAsync<T>(string requestUri) where T : class, new()
+    {
+        try
+        {
+            var response = await Http.GetAsync(requestUri);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<T>() ?? new T();
+            }
+            return new T();
+        }
+        catch
+        {
+            return new T();
+        }
+    }
+}
