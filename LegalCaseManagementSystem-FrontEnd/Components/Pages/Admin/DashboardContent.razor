@@ -1,128 +1,136 @@
-﻿
-@* Main dashboard content component *@
-
-<main>
-    <div class="head-title">
-        <div class="left">
-            <h1>Dashboard</h1>
-            <ul class="breadcrumb">
-                <li><a href="#">Dashboard</a></li>
-                <li><i class='bx bx-chevron-right'></i></li>
-                <li><a class="active" href="#">Home</a></li>
-            </ul>
+﻿<main role="main" class="col-md-9 ml-sm-auto col-lg-10 my-3">
+    <div class="card-list">
+        <div class="row">
+            <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+                <div class="card blue">
+                    <div class="title">all projects</div>
+                    <i class="zmdi zmdi-upload"></i>
+                    <div class="value">89</div>
+                    <div class="stat"><b>13</b>% increase</div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+                <div class="card green">
+                    <div class="title">team members</div>
+                    <i class="zmdi zmdi-upload"></i>
+                    <div class="value">5,990</div>
+                    <div class="stat"><b>4</b>% increase</div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+                <div class="card orange">
+                    <div class="title">total budget</div>
+                    <i class="zmdi zmdi-download"></i>
+                    <div class="value">$80,990</div>
+                    <div class="stat"><b>13</b>% decrease</div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
+                <div class="card red">
+                    <div class="title">new customers</div>
+                    <i class="zmdi zmdi-download"></i>
+                    <div class="value">3</div>
+                    <div class="stat"><b>13</b>% decrease</div>
+                </div>
+            </div>
         </div>
-        <a href="#" class="btn-download">
-            <i class='bx bxs-cloud-download bx-fade-down-hover'></i>
-            <span class="text">Get PDF</span>
-        </a>
     </div>
 
-    <ul class="box-info">
-        @foreach (var stat in Stats)
-        {
-            <li>
-                <i class='bx @stat.Icon'></i>
-                <span class="text">
-                    <h3>@stat.Value</h3>
-                    <p>@stat.Label</p>
-                </span>
-            </li>
-        }
-    </ul>
-
-    <div class="table-data">
-        <div class="order">
-            <div class="head">
-                <h3>Recent Orders</h3>
-                <i class='bx bx-search'></i>
-                <i class='bx bx-filter'></i>
-            </div>
-            <table>
+    <div class="projects mb-4">
+        <div class="projects-inner">
+            <header class="projects-header">
+                <div class="title">Ongoing Projects</div>
+                <div class="count">| 32 Projects</div>
+                <i class="zmdi zmdi-download"></i>
+            </header>
+            <table class="projects-table">
                 <thead>
                     <tr>
-                        <th>User</th>
-                        <th>Date Order</th>
+                        <th>Project</th>
+                        <th>Deadline</th>
+                        <th>Leader + Team</th>
+                        <th>Budget</th>
                         <th>Status</th>
+                        <th class="text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var order in Orders)
-                    {
-                        <tr>
-                            <td>
-                                <img src="https://placehold.co/600x400/png">
-                                <p>@order.User</p>
-                            </td>
-                            <td>@order.Date</td>
-                            <td><span class="status @order.Status.ToLower()">@order.Status</span></td>
-                        </tr>
-                    }
+                    <tr>
+                        <td>
+                            <p>New Dashboard</p>
+                            <p>Google</p>
+                        </td>
+                        <td>
+                            <p>17th Oct, 15</p>
+                            <p class="text-danger">Overdue</p>
+                        </td>
+                        <td class="member">
+                            <figure><img src="https://via.placeholder.com/40" alt="Profile"></figure>
+                            <div class="member-info">
+                                <p>Myrtle Erickson</p>
+                                <p>UK Design Team</p>
+                            </div>
+                        </td>
+                        <td>
+                            <p>$4,670</p>
+                            <p>Paid</p>
+                        </td>
+                        <td class="status">
+                            <span class="status-text status-orange">In progress</span>
+                        </td>
+                        <td>
+                            <select class="action-box">
+                                <option>Actions</option>
+                                <option>Start project</option>
+                                <option>Send for QA</option>
+                                <option>Send invoice</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <!-- Additional rows would go here -->
                 </tbody>
             </table>
         </div>
-        <div class="todo">
-            <div class="head">
-                <h3>Todos</h3>
-                <i class='bx bx-plus icon'></i>
-                <i class='bx bx-filter'></i>
+    </div>
+
+    <div class="chart-data">
+        <div class="row">
+            <div class="col-12 col-md-4">
+                <div class="chart radar-chart dark">
+                    <div class="actions">
+                        <button type="button" class="btn btn-link">
+                            <i class="zmdi zmdi-more-vert"></i>
+                        </button>
+                    </div>
+                    <h3 class="title">Case Statistics</h3>
+                    <p class="tagline">Current Year</p>
+                    <canvas height="400" id="radarChartDark"></canvas>
+                </div>
             </div>
-            <ul class="todo-list">
-                @foreach (var todo in Todos)
-                {
-                    <li class="@(todo.IsCompleted ? "completed" : "not-completed")">
-                        <p>@todo.Task</p>
-                        <i class='bx bx-dots-vertical-rounded'></i>
-                    </li>
-                }
-            </ul>
+            <div class="col-12 col-md-4">
+                <div class="chart bar-chart light">
+                    <div class="actions">
+                        <button type="button" class="btn btn-link">
+                            <i class="zmdi zmdi-more-vert"></i>
+                        </button>
+                    </div>
+                    <h3 class="title">Case Types</h3>
+                    <p class="tagline">Distribution</p>
+                    <canvas height="400" id="barChartHDark"></canvas>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="chart doughnut-chart dark">
+                    <div class="actions">
+                        <button type="button" class="btn btn-link">
+                            <i class="zmdi zmdi-more-vert"></i>
+                        </button>
+                    </div>
+                    <h3 class="title">Case Status</h3>
+                    <p class="tagline">Current</p>
+                    <canvas height="400" id="doughnutChartDark"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 </main>
-
-@code {
-    private List<Stat> Stats = new()
-    {
-        new Stat { Icon = "bxs-calendar-check", Value = "1020", Label = "New Order", Color = "blue" },
-        new Stat { Icon = "bxs-group", Value = "2834", Label = "Visitors", Color = "yellow" },
-        new Stat { Icon = "bxs-dollar-circle", Value = "N$2543.00", Label = "Total Sales", Color = "orange" }
-    };
-
-    private List<Order> Orders = new()
-    {
-        new Order { User = "Micheal John", Date = "18-10-2021", Status = "Completed" },
-        new Order { User = "Ryan Doe", Date = "01-06-2022", Status = "Pending" },
-        new Order { User = "Tarry White", Date = "14-10-2021", Status = "Process" },
-        new Order { User = "Selma", Date = "01-02-2023", Status = "Pending" },
-        new Order { User = "Andreas Doe", Date = "31-10-2021", Status = "Completed" }
-    };
-
-    private List<Todo> Todos = new()
-    {
-        new Todo { Task = "Check Inventory", IsCompleted = true },
-        new Todo { Task = "Manage Delivery Team", IsCompleted = true },
-        new Todo { Task = "Contact Selma: Confirm Delivery", IsCompleted = false },
-        new Todo { Task = "Update Shop Catalogue", IsCompleted = true },
-        new Todo { Task = "Count Profit Analytics", IsCompleted = false }
-    };
-
-    private class Stat
-    {
-        public string Icon { get; set; } = string.Empty;
-        public string Value { get; set; } = string.Empty;
-        public string Label { get; set; } = string.Empty;
-        public string Color { get; set; } = string.Empty;
-    }
-
-    private class Order
-    {
-        public string User { get; set; } = string.Empty;
-        public string Date { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-    }
-
-    private class Todo
-    {
-        public string Task { get; set; } = string.Empty;
-        public bool IsCompleted { get; set; }
-    }
-}

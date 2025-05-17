@@ -1,126 +1,64 @@
-﻿<nav class="navbar">
-    <i class='bx bx-menu bx-sm' @onclick="ToggleSidebar"></i>
-    <a href="#" class="nav-link">Categories</a>
+﻿<nav class="navbar navbar-expand navbar-dark topbar fixed-top">
+    <div class="container-fluid">
+        <!-- Brand/logo and toggle button (for mobile) -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-    <div class="form-container">
-        <form class="@(IsSearchFormVisible ? "show" : "")" @onsubmit="HandleSearch">
-            <div class="form-input">
-                <input type="text" @bind="SearchQuery" placeholder="Search..." />
-                <button type="button" class="search-btn" @onclick="ToggleSearchForm">
-                    <i class='bx @(IsSearchFormVisible ? "bx-x" : "bx-search")'></i>
-                </button>
-            </div>
-        </form>
-    </div>
+        <a class="navbar-brand" href="#">
+            <i class="zmdi zmdi-view-dashboard"></i>
+            <span>LegalCaseSystem</span>
+        </a>
 
-    <div class="switch-lm">
-        <i class="bx bxs-moon"></i>
-        <i class="bx bx-sun"></i>
-        <div class="ball @(IsDarkMode ? "checked" : "")"></div>
-    </div>
-
-    <div class="notification" @onclick="ToggleNotificationMenu">
-        <i class='bx bxs-bell bx-tada-hover'></i>
-        <span class="num">@Notifications.Count</span>
-    </div>
-
-    @if (IsNotificationMenuVisible)
-    {
-        <div class="notification-menu show">
-            <ul>
-                @foreach (var notification in Notifications)
-                {
-                    <li>@notification</li>
-                }
-            </ul>
+        <!-- Search bar -->
+        <div class="search-bar">
+            <i class="zmdi zmdi-search"></i>
+            <input type="text" placeholder="Search cases, clients..." class="form-control">
         </div>
-    }
 
-    <div class="profile" @onclick="ToggleProfileMenu">
-        <img src="https://placehold.co/600x400/png" alt="Profile">
+        <!-- Right side items -->
+        <ul class="navbar-nav ms-auto">
+            <!-- Notifications -->
+            <li class="nav-item dropdown">
+                <a class="nav-link" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
+                    <i class="zmdi zmdi-notifications"></i>
+                    <span class="badge bg-danger">3</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <h6 class="dropdown-header">Notifications</h6>
+                    <a class="dropdown-item" href="#">New case assigned</a>
+                    <a class="dropdown-item" href="#">Court date reminder</a>
+                    <a class="dropdown-item" href="#">Client message</a>
+                </div>
+            </li>
+
+            <!-- Messages -->
+            <li class="nav-item dropdown">
+                <a class="nav-link" href="#" id="messagesDropdown" role="button" data-bs-toggle="dropdown">
+                    <i class="zmdi zmdi-email"></i>
+                    <span class="badge bg-success">5</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <h6 class="dropdown-header">Messages</h6>
+                    <a class="dropdown-item" href="#">From: Client A</a>
+                    <a class="dropdown-item" href="#">From: Opposing Counsel</a>
+                    <a class="dropdown-item" href="#">From: Court Clerk</a>
+                </div>
+            </li>
+
+            <!-- User profile -->
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                    <img src="https://via.placeholder.com/30" alt="User" class="rounded-circle">
+                    <span class="ms-2 d-none d-lg-inline">Attorney Name</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <a class="dropdown-item" href="#"><i class="zmdi zmdi-account"></i> Profile</a>
+                    <a class="dropdown-item" href="#"><i class="zmdi zmdi-settings"></i> Settings</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#"><i class="zmdi zmdi-power"></i> Logout</a>
+                </div>
+            </li>
+        </ul>
     </div>
-
-    @if (IsProfileMenuVisible)
-    {
-        <div class="profile-menu show">
-            <ul>
-                @foreach (var item in ProfileMenuItems)
-                {
-                    <li><a href="@item.Url">@item.Name</a></li>
-                }
-            </ul>
-        </div>
-    }
 </nav>
-
-@code {
-    [Parameter]
-    public EventCallback<bool> OnDarkModeToggle { get; set; }
-
-    private async Task ToggleDarkMode()
-    {
-        IsDarkMode = !IsDarkMode;
-        await OnDarkModeToggle.InvokeAsync(IsDarkMode);
-    }
-
-    [Parameter]
-    public EventCallback ToggleSidebar { get; set; }
-
-    [Parameter]
-    public EventCallback<bool> DarkModeToggled { get; set; }
-
-    [Parameter]
-    public bool IsDarkMode { get; set; }
-
-    private bool IsSearchFormVisible { get; set; }
-    private bool IsNotificationMenuVisible { get; set; }
-    private bool IsProfileMenuVisible { get; set; }
-
-    private string SearchQuery { get; set; } = string.Empty;
-
-    private List<string> Notifications { get; set; } = new()
-    {
-        "New message from John",
-        "Your order has been shipped",
-        "New comment on your post",
-        "Update available for your app",
-        "Reminder: Meeting at 3PM"
-    };
-
-    private List<MenuItem> ProfileMenuItems { get; set; } = new()
-    {
-        new MenuItem { Name = "My Profile", Url = "/profile" },
-        new MenuItem { Name = "Settings", Url = "/settings" },
-        new MenuItem { Name = "Log Out", Url = "/logout" }
-    };
-
-
-    private void ToggleSearchForm()
-    {
-        IsSearchFormVisible = !IsSearchFormVisible;
-    }
-
-    private void HandleSearch()
-    {
-        // Handle search logic here
-        Console.WriteLine($"Searching for: {SearchQuery}");
-    }
-
-    private void ToggleNotificationMenu()
-    {
-        IsNotificationMenuVisible = !IsNotificationMenuVisible;
-        IsProfileMenuVisible = false;
-    }
-
-    private void ToggleProfileMenu()
-    {
-        IsProfileMenuVisible = !IsProfileMenuVisible;
-        IsNotificationMenuVisible = false;
-    }
-
-    private class MenuItem
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Url { get; set; } = string.Empty;
-    }
-}

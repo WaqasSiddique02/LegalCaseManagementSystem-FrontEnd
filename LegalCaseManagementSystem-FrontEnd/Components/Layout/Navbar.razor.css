@@ -1,272 +1,134 @@
-﻿nav {
-    height: 56px;
-    background: var(--light);
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    font-family: var(--lato);
-    position: sticky;
-    top: 0;
-    left: 0;
-    z-index: 1000;
+﻿/* Top Navigation Bar Styling */
+.topbar {
+    background-color: #1b2431;
+    border-bottom: 1px solid #313d4f;
+    height: 60px;
+    padding: 0 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position:fixed;
 }
 
-    nav::before {
-        content: '';
-        position: absolute;
-        width: 40px;
-        height: 40px;
-        bottom: -40px;
-        left: 0;
-        border-radius: 50%;
-        box-shadow: -20px -20px 0 var(--light);
-    }
-
-    nav a {
-        color: var(--dark);
-        text-decoration: none;
-    }
-
-    nav .bx.bx-menu {
-        cursor: pointer;
-        color: var(--dark);
-    }
-
-    nav .nav-link {
-        font-size: 16px;
-        transition: .3s ease;
-    }
-
-        nav .nav-link:hover {
-            color: var(--blue);
-        }
-
-    nav .form-container {
-        max-width: 400px;
-        width: 100%;
-        margin-right: auto;
-    }
-
-    nav .form-input {
+    .topbar .navbar-brand {
+        color: #fff;
+        font-weight: 600;
         display: flex;
         align-items: center;
-        height: 36px;
     }
 
-        nav .form-input input {
-            flex-grow: 1;
-            padding: 0 16px;
-            height: 100%;
-            border: none;
-            background: var(--grey);
-            border-radius: 36px 0 0 36px;
-            outline: none;
-            width: 100%;
-            color: var(--dark);
+        .topbar .navbar-brand i {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
         }
 
-        nav .form-input button {
-            width: 36px;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: var(--blue);
-            color: var(--light);
-            font-size: 18px;
-            border: none;
-            outline: none;
-            border-radius: 0 36px 36px 0;
-            cursor: pointer;
-        }
+/* Search bar styling */
+.search-bar {
+    position: relative;
+    width: 300px;
+    margin: 0 1rem;
+}
 
-    nav .notification {
-        font-size: 20px;
-        position: relative;
-        cursor: pointer;
-    }
-
-        nav .notification .num {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid var(--light);
-            background: var(--red);
-            color: var(--light);
-            font-weight: 700;
-            font-size: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-    nav .notification-menu {
-        display: none;
+    .search-bar i {
         position: absolute;
-        top: 56px;
-        right: 0;
-        background: var(--light);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        border-radius: 15px;
-        width: 250px;
-        max-height: 300px;
-        overflow-y: auto;
-        z-index: 9999;
-        font-family: var(--lato);
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #738297;
+        z-index: 10;
     }
 
-        nav .notification-menu.show {
-            display: block;
-        }
-
-        nav .notification-menu ul {
-            list-style: none;
-            padding: 10px;
-            margin: 0;
-        }
-
-        nav .notification-menu li {
-            padding: 10px;
-            border-bottom: 1px solid var(--grey);
-            color: var(--dark);
-        }
-
-            nav .notification-menu li:hover {
-                background-color: var(--light-blue);
-            }
-
-    nav .profile img {
-        width: 36px;
-        height: 36px;
-        object-fit: cover;
-        border-radius: 50%;
-        cursor: pointer;
+    .search-bar input {
+        padding-left: 35px;
+        background-color: #273142;
+        border: 1px solid #313d4f;
+        color: #fff;
+        border-radius: 4px;
     }
 
-    nav .profile-menu {
-        display: none;
-        position: absolute;
-        top: 56px;
-        right: 0;
-        background: var(--light);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        border-radius: 15px;
+        .search-bar input::placeholder {
+            color: #738297;
+        }
+
+        .search-bar input:focus {
+            background-color: #313d4f;
+            color: #fff;
+            border-color: #2298f1;
+            box-shadow: none;
+        }
+
+/* Nav items styling */
+.topbar .nav-link {
+    color: #738297;
+    padding: 0.5rem 1rem;
+    position: relative;
+}
+
+    .topbar .nav-link:hover {
+        color: #fff;
+    }
+
+    .topbar .nav-link i {
+        font-size: 1.25rem;
+    }
+
+.topbar .badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 0.6rem;
+    padding: 0.25em 0.4em;
+}
+
+/* Dropdown menu styling */
+.topbar .dropdown-menu {
+    background-color: #273142;
+    border: 1px solid #313d4f;
+    margin-top: 0;
+}
+
+.topbar .dropdown-item {
+    color: #fff;
+    padding: 0.5rem 1.5rem;
+}
+
+    .topbar .dropdown-item:hover {
+        background-color: #313d4f;
+        color: #fff;
+    }
+
+.topbar .dropdown-header {
+    color: #738297;
+    font-size: 0.75rem;
+    padding: 0.5rem 1.5rem;
+}
+
+.topbar .dropdown-divider {
+    border-color: #313d4f;
+}
+
+/* User profile image */
+.topbar img.rounded-circle {
+    width: 30px;
+    height: 30px;
+    object-fit: cover;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .search-bar {
         width: 200px;
-        z-index: 9999;
-        font-family: var(--lato);
     }
-
-        nav .profile-menu.show {
-            display: block;
-        }
-
-        nav .profile-menu ul {
-            list-style: none;
-            padding: 10px;
-            margin: 0;
-        }
-
-        nav .profile-menu li {
-            padding: 10px;
-            border-bottom: 1px solid var(--grey);
-        }
-
-            nav .profile-menu li:hover {
-                background-color: var(--light-blue);
-            }
-
-            nav .profile-menu li a {
-                color: var(--dark);
-                font-size: 16px;
-                text-decoration: none;
-            }
-
-    nav .swith-lm {
-        background-color: var(--grey);
-        border-radius: 50px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 3px;
-        position: relative;
-        height: 21px;
-        width: 45px;
-        transform: scale(1.5);
-    }
-
-        nav .swith-lm .ball {
-            background-color: var(--blue);
-            border-radius: 50%;
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            height: 20px;
-            width: 20px;
-            transform: translateX(0px);
-            transition: transform 0.2s linear;
-        }
-
-            nav .swith-lm .ball.checked {
-                transform: translateX(22px);
-            }
-
-.bxs-moon {
-    color: var(--yellow);
 }
 
-.bx-sun {
-    color: var(--orange);
-}
+@media (max-width: 768px) {
+    .topbar {
+        padding: 0.5rem;
+    }
 
-@media screen and (max-width: 768px) {
-    nav .nav-link {
+    .search-bar {
         display: none;
     }
 
-    nav .notification-menu,
-    nav .profile-menu {
-        width: 180px;
-    }
-}
-
-@media screen and (max-width: 576px) {
-    nav .notification-menu,
-    nav .profile-menu {
-        width: 150px;
-    }
-
-    nav .form-input input {
-        display: none;
-    }
-
-    nav .form-input button {
-        width: auto;
-        height: auto;
-        background: transparent;
-        border-radius: 0;
-        color: var(--dark);
-    }
-
-    nav form.show .form-input input {
-        display: block;
-        width: 100%;
-    }
-
-    nav form.show .form-input button {
-        width: 36px;
-        height: 100%;
-        border-radius: 0 36px 36px 0;
-        color: var(--light);
-        background: var(--red);
-    }
-
-    nav form.show ~ .notification,
-    nav form.show ~ .profile {
+    .topbar .navbar-brand span {
         display: none;
     }
 }

@@ -1,45 +1,18 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
 
-@if (ShouldShowAdminLayout())
-{
-    <div class="page @(IsDarkMode ? "dark" : "")">
-        <Sidebar CurrentPage="@CurrentPage" IsSidebarHidden="@IsSidebarHidden" />
-        <section id="content" class="@(IsSidebarHidden ? "expanded" : "")">
-            <Navbar ToggleSidebar="ToggleSidebar"
-                    DarkModeToggled="HandleDarkModeToggle"
-                    IsDarkMode="IsDarkMode" />
+    <div>
+        <section id="content">
+            <Navbar/>
+            <NavMenu></NavMenu>
+            <div class="body-container">
             @Body
+        </div>
         </section>
     </div>
-}
-else
-{
-    @Body
-}
 
 @code {
-    private bool IsSidebarHidden { get; set; } = false;
-    private bool IsDarkMode { get; set; } = false;
+
     private string CurrentPage { get; set; } = "Dashboard";
 
-    private bool ShouldShowAdminLayout()
-    {
-        var currentPath = NavigationManager.Uri.Replace(NavigationManager.BaseUri, "");
-        var publicPages = new HashSet<string> { "", "login", "register", "home" };
-
-        return !publicPages.Contains(currentPath.ToLower());
-    }
-
-    private async Task ToggleSidebar()
-    {
-        IsSidebarHidden = !IsSidebarHidden;
-        StateHasChanged();
-    }
-
-    private void HandleDarkModeToggle(bool isDarkMode)
-    {
-        IsDarkMode = isDarkMode;
-        StateHasChanged();
-    }
 }
