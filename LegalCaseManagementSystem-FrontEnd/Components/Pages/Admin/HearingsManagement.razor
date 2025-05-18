@@ -1,0 +1,417 @@
+﻿@page "/hearings-management"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using LegalCaseManagementSystem_FrontEnd.Components.Layout
+@using LegalCaseManagementSystem_FrontEnd.Models
+@using System.Text.Json
+@using System.Text.Json.Serialization
+
+<Navbar />
+<NavMenu />
+
+<div class="client-management-container">
+    <h3>Hearing Management</h3>
+
+    <div class="management-actions mb-4">
+        <div class="row align-items-center flex-wrap">
+            <div class="col-auto">
+                <div class="input-group" style="max-width: 200px;">
+                    <span class="input-group-text" style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px 0 0 6px; padding: 6px 8px;">
+                        <i class="bi bi-search" style="font-size: 14px;"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Search hearings..." @bind="searchTerm" @bind:event="oninput"
+                           style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; padding: 6px 10px; border-radius: 0 6px 6px 0; outline: none; transition: border-color 0.2s ease-in-out;"
+                           onfocus="this.style.borderColor='var(--primary-color)'; this.style.boxShadow='0 0 5px rgba(0, 123, 255, 0.3)';"
+                           onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';" />
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="input-group" style="max-width: 180px; margin-left: 10px;">
+                    <span class="input-group-text" style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px 0 0 6px; padding: 6px 8px;">
+                        <i class="bi bi-filter" style="font-size: 14px;"></i>
+                    </span>
+                    <select class="form-select" @bind="selectedOutcome"
+                            style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; padding: 6px 10px; border-radius: 0 6px 6px 0; outline: none; transition: border-color 0.2s ease-in-out;"
+                            onfocus="this.style.borderColor='var(--primary-color)'; this.style.boxShadow='0 0 5px rgba(0, 123, 255, 0.3)';"
+                            onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';">
+                        <option value="">All Outcomes</option>
+                        <option value="Scheduled">Scheduled</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Adjourned">Adjourned</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="input-group" style="max-width: 180px; margin-left: 10px;">
+                    <span class="input-group-text" style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px 0 0 6px; padding: 6px 8px;">
+                        <i class="bi bi-briefcase" style="font-size: 14px;"></i>
+                    </span>
+                    <select class="form-select" @bind="selectedCaseId"
+                            style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; padding: 6px 10px; border-radius: 0 6px 6px 0; outline: none; transition: border-color 0.2s ease-in-out;"
+                            onfocus="this.style.borderColor='var(--primary-color)'; this.style.boxShadow='0 0 5px rgba(0, 123, 255, 0.3)';"
+                            onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';">
+                        <option value="">All Cases</option>
+                        @foreach (var caseItem in cases)
+                        {
+                            <option value="@caseItem.CaseId">@caseItem.Title (ID: @caseItem.CaseId)</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+            <button class="btn btn-primary" @onclick="ShowAddModal"
+                    style="background-color: var(--primary-color); border: none; color: #fff; font-size: 14px; padding: 6px 20px; border-radius: 6px;font-weight: 500; transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;"
+                    onmouseover="this.style.backgroundColor='#0056b3'; this.style.boxShadow='0 2px 5px rgba(0, 0, 0, 0.2)';"
+                    onmouseout="this.style.backgroundColor='var(--primary-color)'; this.style.boxShadow='none';">
+                <i class="bi bi-plus-circle" style="font-size: 14px; margin-right: 5px;"></i>Add
+            </button>
+        </div>
+
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Hearing ID</th>
+                        <th scope="col">Case ID</th>
+                        <th scope="col">Case Title</th>
+                        <th scope="col">Hearing Date</th>
+                        <th scope="col">Venue</th>
+                        <th scope="col">Outcome</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var hearing in FilteredHearings)
+                    {
+                        <tr>
+                            <td>@hearing.HearingId</td>
+                            <td>@hearing.CaseId</td>
+                            <td>@(hearing.Case?.Title ?? cases.FirstOrDefault(c => c.CaseId == hearing.CaseId)?.Title ?? "Unknown")</td>
+                            <td>@hearing.HearingDate.ToString("g")</td>
+                            <td>@hearing.Venue</td>
+                            <td>
+                                <span class="badge @(GetOutcomeBadgeClass(hearing.Outcome))">
+                                    @hearing.Outcome
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-warning btn-sm me-2" title="Edit Hearing" @onclick="() => ShowEditModal(hearing)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" title="Delete Hearing" @onclick="() => ShowDeleteModal(hearing)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Add/Edit Modal -->
+@if (showModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditing ? "Edit Hearing" : "Add New Hearing")</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Case</label>
+                        <select class="form-select" @bind="currentHearing.CaseId" required disabled="@isEditing">
+                            <option value="0" disabled selected>Select a case</option>
+                            @foreach (var caseItem in cases)
+                            {
+                                <option value="@caseItem.CaseId">@caseItem.Title (ID: @caseItem.CaseId)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hearing Date</label>
+                        <input type="datetime-local" class="form-control" @bind="currentHearing.HearingDate" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Venue</label>
+                        <input type="text" class="form-control" @bind="currentHearing.Venue" required />
+                    </div>
+                    @if (isEditing)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Outcome</label>
+                            <select class="form-select" @bind="currentHearing.Outcome" required>
+                                <option value="Scheduled">Scheduled</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Adjourned">Adjourned</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveHearing">
+                        @(isEditing ? "Update" : "Create")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDeleteModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the hearing at <strong>@currentHearing.Venue</strong> on <strong>@currentHearing.HearingDate.ToString("g")</strong>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteHearing">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    public int? caseId { get; set; }
+
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+    private List<Hearing> hearings = new();
+    private List<Case> cases = new();
+    private string searchTerm = string.Empty;
+    private string selectedOutcome = string.Empty;
+    private int? selectedCaseId;
+    private bool showModal = false;
+    private bool showDeleteModal = false;
+    private bool isEditing = false;
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private Hearing currentHearing = new();
+
+    private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        selectedCaseId = caseId; // Set from query parameter
+        await LoadData();
+    }
+
+    private List<Hearing> FilteredHearings => hearings
+        .Where(h => (string.IsNullOrEmpty(selectedOutcome) || h.Outcome == selectedOutcome) &&
+                    (!selectedCaseId.HasValue || h.CaseId == selectedCaseId.Value) &&
+                    (string.IsNullOrEmpty(searchTerm) ||
+                     (h.Case?.Title?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? cases.FirstOrDefault(c => c.CaseId == h.CaseId)?.Title?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                     h.Venue.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     h.Outcome.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     h.HearingDate.ToString("g").Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
+        .ToList();
+
+    private string GetOutcomeBadgeClass(string outcome)
+    {
+        return outcome switch
+        {
+            "Scheduled" => "badge-scheduled",
+            "Completed" => "badge-completed",
+            "Adjourned" => "badge-adjourned",
+            "Cancelled" => "badge-cancelled",
+            _ => "badge-secondary"
+        };
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Fetch cases
+            var caseResponse = await Http.GetAsync("/api/Cases");
+            if (!caseResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading cases: {caseResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            var caseContent = await caseResponse.Content.ReadAsStringAsync();
+            cases = JsonSerializer.Deserialize<List<Case>>(caseContent, jsonOptions) ?? new();
+
+            // Fetch hearings for all cases
+            hearings.Clear();
+            foreach (var caseItem in cases)
+            {
+                var hearingResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Hearings");
+                if (hearingResponse.IsSuccessStatusCode)
+                {
+                    var caseHearings = await hearingResponse.Content.ReadFromJsonAsync<List<Hearing>>() ?? new();
+                    hearings.AddRange(caseHearings);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading data: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        currentHearing = new Hearing
+            {
+                HearingDate = DateTime.Now,
+                Outcome = "Scheduled"
+            };
+        isEditing = false;
+        showModal = true;
+    }
+
+    private void ShowEditModal(Hearing hearing)
+    {
+        currentHearing = new Hearing
+            {
+                HearingId = hearing.HearingId,
+                CaseId = hearing.CaseId,
+                HearingDate = hearing.HearingDate,
+                Venue = hearing.Venue,
+                Outcome = hearing.Outcome
+            };
+        isEditing = true;
+        showModal = true;
+    }
+
+    private void ShowDeleteModal(Hearing hearing)
+    {
+        currentHearing = hearing;
+        showDeleteModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+    }
+
+    private async Task SaveHearing()
+    {
+        try
+        {
+            if (isEditing)
+            {
+                var hearingToSave = new
+                {
+                    HearingDate = currentHearing.HearingDate.ToUniversalTime().ToString("O"),
+                    Venue = currentHearing.Venue,
+                    Outcome = currentHearing.Outcome
+                };
+
+                var response = await Http.PutAsJsonAsync($"/api/cases/{currentHearing.CaseId}/Hearings/{currentHearing.HearingId}", hearingToSave);
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadData();
+                    showModal = false;
+                }
+                else
+                {
+                    errorMessage = $"Error updating hearing: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+            else
+            {
+                var hearingToSave = new
+                {
+                    HearingDate = currentHearing.HearingDate.ToUniversalTime().ToString("O"),
+                    Venue = currentHearing.Venue
+                };
+
+                var response = await Http.PostAsJsonAsync($"/api/cases/{currentHearing.CaseId}/Hearings", hearingToSave);
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadData();
+                    showModal = false;
+                }
+                else
+                {
+                    errorMessage = $"Error creating hearing: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception saving hearing: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteHearing()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"/api/cases/{currentHearing.CaseId}/Hearings/{currentHearing.HearingId}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+                showDeleteModal = false;
+            }
+            else
+            {
+                errorMessage = $"Error deleting hearing: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception deleting hearing: {ex.Message}";
+        }
+    }
+}
