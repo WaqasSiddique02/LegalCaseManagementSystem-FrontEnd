@@ -1,0 +1,383 @@
+﻿@page "/lawyer-management"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using LegalCaseManagementSystem_FrontEnd.Components.Layout
+@using LegalCaseManagementSystem_FrontEnd.Models
+
+<Navbar />
+<NavMenu />
+
+<div class="client-management-container">
+    <h3>Lawyer Management</h3>
+
+    <div class="management-actions mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Search lawyers..." @bind="searchTerm" @bind:event="oninput" />
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <button class="btn btn-primary" @onclick="ShowAddModal">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Lawyer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Full Name</th>
+                        <th scope="col">Specialization</th>
+                        <th scope="col">Username</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var lawyer in FilteredLawyers)
+                    {
+                        <tr>
+                            <td>@lawyer.FullName</td>
+                            <td>@lawyer.Specialization</td>
+                            <td>@(lawyer.User != null ? lawyer.User.Username : "N/A")</td>
+                            <td>@(lawyer.User != null ? lawyer.User.Email : "N/A")</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm me-2" title="Edit Lawyer" @onclick="() => ShowEditModal(lawyer)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" title="Delete Lawyer" @onclick="() => ShowDeleteModal(lawyer)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Add/Edit Modal -->
+@if (showModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditing ? "Edit Lawyer" : "Add New Lawyer")</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" @bind="currentLawyer.FullName" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Specialization</label>
+                        <input type="text" class="form-control" @bind="currentLawyer.Specialization" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" @bind="currentLawyer.User.Username" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" @bind="currentLawyer.User.Email" required />
+                    </div>
+                    @if (!isEditing)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" @bind="currentLawyer.User.PasswordHash" required />
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <input type="text" class="form-control" value="Lawyer" readonly />
+                        @* <input type="hidden" @bind="currentLawyer.User.Role" /> *@
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveLawyer">
+                        @(isEditing ? "Update" : "Create")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDeleteModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete lawyer <strong>@currentLawyer.FullName</strong>?</p>
+                    <p class="text-danger">This will also delete the associated user account.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteLawyer">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+    private List<Lawyer> lawyers = new();
+    private string searchTerm = string.Empty;
+    private bool showModal = false;
+    private bool showDeleteModal = false;
+    private bool isEditing = false;
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private Lawyer currentLawyer = new()
+        {
+            User = new User()
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLawyers();
+    }
+
+    private List<Lawyer> FilteredLawyers => lawyers
+        .Where(l => l.User != null && l.User.Role == "Lawyer" &&
+                    (string.IsNullOrEmpty(searchTerm) ||
+                     l.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     l.Specialization.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     l.User.Username.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     l.User.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
+        .ToList();
+
+    private async Task LoadLawyers()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Fetch lawyers
+            var lawyerResponse = await Http.GetAsync("/api/Lawyers");
+            if (!lawyerResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading lawyers: {lawyerResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+
+            lawyers = await lawyerResponse.Content.ReadFromJsonAsync<List<Lawyer>>() ?? new();
+
+            // Fetch users
+            var userResponse = await Http.GetAsync("/api/Users");
+            if (!userResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading users: {userResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+
+            var users = await userResponse.Content.ReadFromJsonAsync<List<User>>() ?? new();
+
+            // Map users to lawyers and filter for Lawyer role
+            foreach (var lawyer in lawyers)
+            {
+                lawyer.User = users.FirstOrDefault(u => u.UserId == lawyer.UserId && u.Role == "Lawyer");
+            }
+
+            // Remove lawyers without a valid Lawyer user
+            lawyers = lawyers.Where(l => l.User != null).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading lawyers: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        currentLawyer = new Lawyer
+            {
+                User = new User
+                {
+                    Role = "Lawyer"
+                }
+            };
+        isEditing = false;
+        showModal = true;
+    }
+
+    private void ShowEditModal(Lawyer lawyer)
+    {
+        currentLawyer = new Lawyer
+            {
+                LawyerId = lawyer.LawyerId,
+                UserId = lawyer.UserId,
+                FullName = lawyer.FullName,
+                Specialization = lawyer.Specialization,
+                User = lawyer.User != null ? new User
+                {
+                    UserId = lawyer.User.UserId,
+                    Username = lawyer.User.Username,
+                    Email = lawyer.User.Email,
+                    Role = "Lawyer"
+                } : new User { Role = "Lawyer" }
+            };
+        isEditing = true;
+        showModal = true;
+    }
+
+    private void ShowDeleteModal(Lawyer lawyer)
+    {
+        currentLawyer = lawyer;
+        showDeleteModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+    }
+
+    private async Task SaveLawyer()
+    {
+        try
+        {
+            if (isEditing)
+            {
+                var lawyerToUpdate = new
+                {
+                    FullName = currentLawyer.FullName,
+                    Specialization = currentLawyer.Specialization
+                };
+
+                var lawyerResponse = await Http.PutAsJsonAsync(
+                    $"/api/Lawyers/{currentLawyer.LawyerId}",
+                    lawyerToUpdate);
+
+                var userToUpdate = new
+                {
+                    Username = currentLawyer.User?.Username ?? string.Empty,
+                    Email = currentLawyer.User?.Email ?? string.Empty,
+                    Role = "Lawyer"
+                };
+
+                var userResponse = await Http.PutAsJsonAsync(
+                    $"/api/Users/{currentLawyer.User?.UserId}",
+                    userToUpdate);
+
+                if (lawyerResponse.IsSuccessStatusCode && userResponse.IsSuccessStatusCode)
+                {
+                    await LoadLawyers();
+                    showModal = false;
+                }
+                else
+                {
+                    var lawyerError = !lawyerResponse.IsSuccessStatusCode ?
+                        await lawyerResponse.Content.ReadAsStringAsync() : "";
+                    var userError = !userResponse.IsSuccessStatusCode ?
+                        await userResponse.Content.ReadAsStringAsync() : "";
+                    errorMessage = $"Error updating lawyer: {lawyerError} {userError}";
+                }
+            }
+            else
+            {
+                var newLawyer = new
+                {
+                    FullName = currentLawyer.FullName,
+                    Specialization = currentLawyer.Specialization,
+                    User = new
+                    {
+                        Username = currentLawyer.User?.Username ?? string.Empty,
+                        Email = currentLawyer.User?.Email ?? string.Empty,
+                        Password = currentLawyer.User?.PasswordHash ?? string.Empty,
+                        Role = "Lawyer"
+                    }
+                };
+
+                var response = await Http.PostAsJsonAsync("/api/Lawyers", newLawyer);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadLawyers();
+                    showModal = false;
+                }
+                else
+                {
+                    errorMessage = $"Error creating lawyer: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception saving lawyer: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteLawyer()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"/api/Lawyers/{currentLawyer.LawyerId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadLawyers();
+                showDeleteModal = false;
+            }
+            else
+            {
+                errorMessage = $"Error deleting lawyer: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception deleting lawyer: {ex.Message}";
+        }
+    }
+}
