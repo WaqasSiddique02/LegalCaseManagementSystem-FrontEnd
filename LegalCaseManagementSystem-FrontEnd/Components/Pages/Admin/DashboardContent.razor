@@ -1,5 +1,6 @@
 ﻿@using LegalCaseManagementSystem_FrontEnd.Models
 @inject HttpClient Http
+@rendermode InteractiveServer
 
 <main role="main" class="col-md-9 ml-sm-auto col-lg-10 my-3">
     @if (isLoading)
@@ -28,20 +29,20 @@
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
                     <div class="card green">
-                        <div class="title">Pending cases</div>
-                        <div class="value">@(cases?.Count(c => c?.Status == "Pending") ?? 0)</div>
+                        <div class="title">Open Cases</div>
+                        <div class="value">@(cases?.Count(c => c?.Status == CaseStatus.Open) ?? 0)</div>
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
                     <div class="card orange">
-                        <div class="title">Completed Cases</div>
-                        <div class="value">@(cases?.Count(c => c?.Status == "Completed") ?? 0)</div>
+                        <div class="title">Pending Cases</div>
+                        <div class="value">@(cases?.Count(c => c?.Status == CaseStatus.Pending) ?? 0)</div>
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
                     <div class="card red">
-                        <div class="title">Active Cases</div>
-                        <div class="value">@(cases?.Count(c => c?.Status == "Active") ?? 0)</div>
+                        <div class="title">Closed Cases</div>
+                        <div class="value">@(cases?.Count(c => c?.Status == CaseStatus.Closed) ?? 0)</div>
                     </div>
                 </div>
             </div>
@@ -106,14 +107,14 @@
                                             {
                                                 statusClass = caseItem.Status switch
                                                 {
-                                                    "Pending" => "status-red",
-                                                    "In Progress" => "status-orange",
-                                                    "Completed" => "status-green",
+                                                    CaseStatus.Pending => "status-red",
+                                                    CaseStatus.Open => "status-orange",
+                                                    CaseStatus.Closed => "status-green",
                                                     _ => "status-blue"
                                                 };
                                             }
                                         }
-                                        <span class="status-text @statusClass">@(caseItem?.Status ?? "Unknown")</span>
+                                        <span class="status-text @statusClass">@(caseItem?.Status.ToString() ?? "Unknown")</span>
                                     </td>
                                     <td>
                                         <p>@(caseItem?.StartDate.ToString("dd-MM-yyyy") ?? "N/A")</p>
@@ -138,10 +139,10 @@
                     <div class="chart radar-chart dark">
                         <h3 class="title">Pending Cases</h3>
                         <p class="tagline">Current Year</p>
-                        @if (cases?.Any(c => c?.Status == "Pending") == true)
+                        @if (cases?.Any(c => c?.Status == CaseStatus.Pending) == true)
                         {
                             <div class="case-list">
-                                @foreach (var caseItem in cases.Where(c => c?.Status == "Pending").Take(5))
+                                @foreach (var caseItem in cases.Where(c => c?.Status == CaseStatus.Pending).Take(5))
                                 {
                                     var client = clients?.FirstOrDefault(c => c?.ClientId == caseItem?.ClientId);
                                     <div class="case-item">
@@ -159,12 +160,12 @@
                 </div>
                 <div class="col-12 col-md-4">
                     <div class="chart bar-chart light">
-                        <h3 class="title">Completed Cases</h3>
+                        <h3 class="title">Closed Cases</h3>
                         <p class="tagline">Distribution</p>
-                        @if (cases?.Any(c => c?.Status == "Completed") == true)
+                        @if (cases?.Any(c => c?.Status == CaseStatus.Closed) == true)
                         {
                             <div class="case-list">
-                                @foreach (var caseItem in cases.Where(c => c?.Status == "Completed").Take(5))
+                                @foreach (var caseItem in cases.Where(c => c?.Status == CaseStatus.Closed).Take(5))
                                 {
                                     var client = clients?.FirstOrDefault(c => c?.ClientId == caseItem?.ClientId);
                                     <div class="case-item">
@@ -176,7 +177,7 @@
                         }
                         else
                         {
-                            <div class="alert alert-info">No completed cases found</div>
+                            <div class="alert alert-info">No closed cases found</div>
                         }
                     </div>
                 </div>
@@ -227,7 +228,7 @@
             lawyers = new List<Lawyer>();
             caseHearings = new List<Hearing>();
 
-            var casesTask = SafeGetFromJsonAsync<List<Case>>("/api/Auth/login");
+            var casesTask = SafeGetFromJsonAsync<List<Case>>("/api/Cases");
             var clientsTask = SafeGetFromJsonAsync<List<Client>>("/api/Clients");
             var lawyersTask = SafeGetFromJsonAsync<List<Lawyer>>("/api/Lawyers");
 
@@ -245,7 +246,7 @@
             if (recentCases?.Any() == true)
             {
                 var hearingTasks = recentCases.Select(c =>
-                    SafeGetFromJsonAsync<List<Hearing>>($"/api/cases/{c?.CaseId}/Hearings")).ToList();
+                    SafeGetFromJsonAsync<List<Hearing>>($"/api/Cases/{c?.CaseId}/Hearings")).ToList();
 
                 var hearingsResults = await Task.WhenAll(hearingTasks);
                 caseHearings = hearingsResults?.SelectMany(h => h ?? new List<Hearing>())
