@@ -1,0 +1,83 @@
+﻿.document-card {
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background-color 0.2s ease-in-out;
+}
+
+    .document-card:hover {
+        background-color: var(--hover-bg);
+    }
+
+.document-info {
+    flex-grow: 1;
+    color: var(--text-color);
+}
+
+    .document-info h6 {
+        font-size: 1.1rem;
+        margin: 0;
+        color: var(--text-color);
+    }
+
+    .document-info p {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin: 0.25rem 0 0;
+    }
+
+.btn-download {
+    background-color: #17a2b8;
+    border: none;
+    color: #fff;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+    .btn-download:hover {
+        background-color: #138496;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+.upload-form {
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    color: var(--text-color);
+}
+
+.upload-form-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.upload-form-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.upload-form-body {
+    padding: 0.5rem 0;
+}
+
+.upload-form-footer {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}

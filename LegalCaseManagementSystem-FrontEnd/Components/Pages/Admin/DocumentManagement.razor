@@ -1,0 +1,361 @@
+﻿@page "/documents-management"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using LegalCaseManagementSystem_FrontEnd.Components.Layout
+@using LegalCaseManagementSystem_FrontEnd.Models
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using Microsoft.AspNetCore.Components.Forms
+
+<Navbar />
+<NavMenu />
+
+<div class="client-management-container">
+    <h3>Document Management</h3>
+
+    <div class="upload-form">
+        <div class="upload-form-header">
+            <h5 class="upload-form-title">Upload Document</h5>
+        </div>
+        <div class="upload-form-body">
+            <EditForm Model="newDocument" OnValidSubmit="UploadDocument">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="mb-3">
+                    <label class="form-label">Case</label>
+                    <InputSelect class="form-select" @bind-Value="newDocument.CaseId" required>
+                        <option value="0" disabled selected>Select a case</option>
+                        @foreach (var caseItem in cases)
+                        {
+                            <option value="@caseItem.CaseId">@caseItem.Title (ID: @caseItem.CaseId)</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => newDocument.CaseId" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <InputText class="form-control" @bind-Value="newDocument.Title" required />
+                    <ValidationMessage For="() => newDocument.Title" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">File</label>
+                    <InputFile class="form-control" OnChange="HandleFileSelection" accept=".pdf,.doc,.docx" required />
+                    @if (fileError != null)
+                    {
+                        <div class="text-danger mt-1">@fileError</div>
+                    }
+                </div>
+                <div class="upload-form-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="ClearForm">Clear</button>
+                    <button type="submit" class="btn btn-primary" disabled="@isUploading">
+                        @if (isUploading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Uploading...</span>
+                        }
+                        else
+                        {
+                            <span>Upload</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+
+    <div class="management-actions mb-4">
+        <div class="row align-items-center flex-wrap">
+            <div class="col-auto">
+                <div class="input-group" style="max-width: 200px;">
+                    <span class="input-group-text" style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px 0 0 6px; padding: 6px 8px;">
+                        <i class="bi bi-search" style="font-size: 14px;"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Search documents..." @bind="searchTerm" @bind:event="oninput"
+                           style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; padding: 6px 10px; border-radius: 0 6px 6px 0; outline: none; transition: border-color 0.2s ease-in-out;"
+                           onfocus="this.style.borderColor='var(--primary-color)'; this.style.boxShadow='0 0 5px rgba(0, 123, 255, 0.3);'"
+                           onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';" />
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="input-group" style="max-width: 180px; margin-left: 10px;">
+                    <span class="input-group-text" style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px 0 0 6px; padding: 6px 8px;">
+                        <i class="bi bi-briefcase" style="font-size: 14px;"></i>
+                    </span>
+                    <select class="form-select" @bind="selectedCaseId"
+                            style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; padding: 6px 10px; border-radius: 0 6px 6px 0; outline: none; transition: border-color 0.2s ease-in-out;"
+                            onfocus="this.style.borderColor='var(--primary-color)'; this.style.boxShadow='0 0 5px rgba(0, 123, 255, 0.3);'"
+                            onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';">
+                        <option value="">All Cases</option>
+                        @foreach (var caseItem in cases)
+                        {
+                            <option value="@caseItem.CaseId">@caseItem.Title (ID: @caseItem.CaseId)</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div class="document-list">
+            @foreach (var document in FilteredDocuments)
+            {
+                <div class="document-card">
+                    <div class="document-info">
+                        <h6>@document.Title</h6>
+                        <p>Case: @(document.Case?.Title ?? cases.FirstOrDefault(c => c.CaseId == document.CaseId)?.Title ?? "Unknown")</p>
+                        <p>Uploaded: @document.UploadedAt.ToString("g")</p>
+                    </div>
+                    <div>
+                        <a href="@document.FilePath" download="@document.Title" class="btn btn-download me-2" title="Download Document">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <button class="btn btn-danger btn-sm" title="Delete Document" @onclick="() => ShowDeleteModal(document)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+            @if (!FilteredDocuments.Any())
+            {
+                <p class="text-muted">No documents found.</p>
+            }
+        </div>
+    }
+</div>
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDeleteModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete document <strong>@currentDocument.Title</strong> for <strong>@(currentDocument.Case?.Title ?? cases.FirstOrDefault(c => c.CaseId == currentDocument.CaseId)?.Title ?? "Unknown")</strong>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteDocument">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    public int? caseId { get; set; }
+
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+    private List<Document> documents = new();
+    private List<Case> cases = new();
+    private string searchTerm = string.Empty;
+    private int? selectedCaseId;
+    private bool showDeleteModal = false;
+    private bool isLoading = false;
+    private bool isUploading = false;
+    private string? errorMessage;
+    private string? fileError;
+
+    private Document newDocument = new();
+    private Document currentDocument = new();
+    private IBrowserFile? selectedFile;
+
+    private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        selectedCaseId = caseId;
+        await LoadData();
+    }
+
+    private List<Document> FilteredDocuments => documents
+        .Where(d => (!selectedCaseId.HasValue || d.CaseId == selectedCaseId.Value) &&
+                    (string.IsNullOrEmpty(searchTerm) ||
+                     d.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     (d.Case?.Title?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? cases.FirstOrDefault(c => c.CaseId == d.CaseId)?.Title?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)))
+        .OrderByDescending(d => d.UploadedAt)
+        .ToList();
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Fetch cases
+            var caseResponse = await Http.GetAsync("/api/Cases");
+            if (!caseResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading cases: {caseResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            var caseContent = await caseResponse.Content.ReadAsStringAsync();
+            cases = JsonSerializer.Deserialize<List<Case>>(caseContent, jsonOptions) ?? new();
+
+            // Fetch documents for all cases
+            documents.Clear();
+            foreach (var caseItem in cases)
+            {
+                var documentResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Documents");
+                if (documentResponse.IsSuccessStatusCode)
+                {
+                    var caseDocuments = await documentResponse.Content.ReadFromJsonAsync<List<Document>>() ?? new();
+                    documents.AddRange(caseDocuments);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading data: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearForm()
+    {
+        newDocument = new Document
+            {
+                CaseId = 0,
+                Title = string.Empty
+            };
+        selectedFile = null;
+        fileError = null;
+        StateHasChanged();
+    }
+
+    private void ShowDeleteModal(Document document)
+    {
+        currentDocument = document;
+        showDeleteModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        StateHasChanged();
+    }
+
+    private void HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            selectedFile = e.File;
+            fileError = null;
+
+            var allowedExtensions = new[] { ".pdf", ".doc", ".docx" };
+            var extension = Path.GetExtension(selectedFile.Name).ToLower();
+
+            if (!allowedExtensions.Contains(extension))
+            {
+                fileError = "Only PDF, DOC, or DOCX files are allowed.";
+                selectedFile = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            fileError = "Error selecting file: " + ex.Message;
+            selectedFile = null;
+        }
+        StateHasChanged();
+    }
+
+    private async Task UploadDocument()
+    {
+        if (selectedFile == null)
+        {
+            fileError = "Please select a file.";
+            StateHasChanged();
+            return;
+        }
+
+        isUploading = true;
+        errorMessage = null;
+
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            content.Add(new StringContent(newDocument.CaseId.ToString()), "caseId");
+            content.Add(new StringContent(newDocument.Title), "title");
+
+            var streamContent = new StreamContent(selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024)); // 10MB limit
+            content.Add(streamContent, "file", selectedFile.Name);
+
+            var response = await Http.PostAsync($"/api/cases/{newDocument.CaseId}/Documents", content);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+                ClearForm();
+            }
+            else
+            {
+                errorMessage = $"Error uploading document: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception uploading document: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteDocument()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"/api/cases/{currentDocument.CaseId}/Documents/{currentDocument.DocumentId}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+                showDeleteModal = false;
+            }
+            else
+            {
+                errorMessage = $"Error deleting document: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception deleting document: {ex.Message}";
+        }
+        StateHasChanged();
+    }
+}
