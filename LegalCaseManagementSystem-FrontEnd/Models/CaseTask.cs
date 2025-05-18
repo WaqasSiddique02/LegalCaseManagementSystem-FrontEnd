@@ -12,7 +12,6 @@ namespace LegalCaseManagementSystem_FrontEnd.Models
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
 
-        [JsonConverter(typeof(JsonStringEnumConverter))]
         public string Status { get; set; } = "Pending";
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? CompletedAt { get; set; }

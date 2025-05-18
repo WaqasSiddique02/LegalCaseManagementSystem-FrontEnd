@@ -1,0 +1,397 @@
+﻿@page "/client-management"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using LegalCaseManagementSystem_FrontEnd.Components.Layout
+@using LegalCaseManagementSystem_FrontEnd.Models
+
+<Navbar/>
+<NavMenu></NavMenu>
+<div class="client-management-container">
+    <h3>Client Management</h3>
+
+    <div class="management-actions mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Search clients..." @bind="searchTerm" @bind:event="oninput" />
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <button class="btn btn-primary" @onclick="ShowAddModal">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Client
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Full Name</th>
+                        <th scope="col">Contact Info</th>
+                        <th scope="col">Username</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Role</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var client in FilteredClients)
+                    {
+                        <tr>
+                            <td>@client.FullName</td>
+                            <td>@client.ContactInfo</td>
+                            <td>@(client.User != null ? client.User.Username : "N/A")</td>
+                            <td>@(client.User != null ? client.User.Email : "N/A")</td>
+                            <td>
+                                <span class="badge @(client.User != null ? GetRoleBadgeClass(client.User.Role) : "badge-secondary")">
+                                    @(client.User != null ? client.User.Role : "None")
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-warning btn-sm me-2" title="Edit Client" @onclick="() => ShowEditModal(client)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" title="Delete Client" @onclick="() => ShowDeleteModal(client)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Add/Edit Modal -->
+@if (showModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditing ? "Edit Client" : "Add New Client")</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" @bind="currentClient.FullName" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contact Info</label>
+                        <input type="text" class="form-control" @bind="currentClient.ContactInfo" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" @bind="currentClient.User.Username" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" @bind="currentClient.User.Email" required />
+                    </div>
+                    @if (!isEditing)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" @bind="currentClient.User.PasswordHash" required />
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select class="form-select" @bind="currentClient.User.Role" required>
+                            <option value="Client">Client</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveClient">
+                        @(isEditing ? "Update" : "Create")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDeleteModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete client <strong>@currentClient.FullName</strong>?</p>
+                    <p class="text-danger">This will also delete the associated user account.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteClient">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+    private List<Client> clients = new();
+    private string searchTerm = string.Empty;
+    private bool showModal = false;
+    private bool showDeleteModal = false;
+    private bool isEditing = false;
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private Client currentClient = new()
+        {
+            User = new User()
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClients();
+    }
+
+    private List<Client> FilteredClients => clients
+        .Where(c => string.IsNullOrEmpty(searchTerm) ||
+               c.FullName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+               c.ContactInfo.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+               (c.User?.Username?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+               (c.User?.Email?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
+        .ToList();
+
+    private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            "Admin" => "badge-admin",
+            "Lawyer" => "badge-lawyer",
+            "Client" => "badge-client",
+            "Staff" => "badge-staff",
+            _ => "badge-secondary"
+        };
+    }
+
+    private async Task LoadClients()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Fetch clients
+            var clientResponse = await Http.GetAsync("/api/Clients");
+            if (!clientResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading clients: {clientResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+
+            clients = await clientResponse.Content.ReadFromJsonAsync<List<Client>>() ?? new();
+
+            // Fetch users
+            var userResponse = await Http.GetAsync("/api/Users");
+            if (!userResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading users: {userResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+
+            var users = await userResponse.Content.ReadFromJsonAsync<List<User>>() ?? new();
+
+            // Map users to clients
+            foreach (var client in clients)
+            {
+                client.User = users.FirstOrDefault(u => u.UserId == client.UserId);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading clients: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        currentClient = new Client
+            {
+                User = new User
+                {
+                    Role = "Client"
+                }
+            };
+        isEditing = false;
+        showModal = true;
+    }
+
+    private void ShowEditModal(Client client)
+    {
+        currentClient = new Client
+            {
+                ClientId = client.ClientId,
+                UserId = client.UserId,
+                FullName = client.FullName,
+                ContactInfo = client.ContactInfo,
+                User = client.User != null ? new User
+                {
+                    UserId = client.User.UserId,
+                    Username = client.User.Username,
+                    Email = client.User.Email,
+                    Role = client.User.Role
+                } : new User { Role = "Client" }
+            };
+        isEditing = true;
+        showModal = true;
+    }
+
+    private void ShowDeleteModal(Client client)
+    {
+        currentClient = client;
+        showDeleteModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+    }
+
+    private async Task SaveClient()
+    {
+        try
+        {
+            if (isEditing)
+            {
+                var clientToUpdate = new
+                {
+                    FullName = currentClient.FullName,
+                    ContactInfo = currentClient.ContactInfo
+                };
+
+                var clientResponse = await Http.PutAsJsonAsync(
+                    $"/api/Clients/{currentClient.ClientId}",
+                    clientToUpdate);
+
+                var userToUpdate = new
+                {
+                    Username = currentClient.User?.Username ?? string.Empty,
+                    Email = currentClient.User?.Email ?? string.Empty,
+                    Role = currentClient.User?.Role ?? "Client"
+                };
+
+                var userResponse = await Http.PutAsJsonAsync(
+                    $"/api/Users/{currentClient.User?.UserId}",
+                    userToUpdate);
+
+                if (clientResponse.IsSuccessStatusCode && userResponse.IsSuccessStatusCode)
+                {
+                    await LoadClients();
+                    showModal = false;
+                }
+                else
+                {
+                    var clientError = !clientResponse.IsSuccessStatusCode ?
+                        await clientResponse.Content.ReadAsStringAsync() : "";
+                    var userError = !userResponse.IsSuccessStatusCode ?
+                        await userResponse.Content.ReadAsStringAsync() : "";
+                    errorMessage = $"Error updating: {clientError} {userError}";
+                }
+            }
+            else
+            {
+                var newClient = new
+                {
+                    FullName = currentClient.FullName,
+                    ContactInfo = currentClient.ContactInfo,
+                    User = new
+                    {
+                        Username = currentClient.User?.Username ?? string.Empty,
+                        Email = currentClient.User?.Email ?? string.Empty,
+                        Password = currentClient.User?.PasswordHash ?? string.Empty,
+                        Role = currentClient.User?.Role ?? "Client"
+                    }
+                };
+
+                var response = await Http.PostAsJsonAsync("/api/Clients", newClient);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadClients();
+                    showModal = false;
+                }
+                else
+                {
+                    errorMessage = $"Error creating client: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception saving client: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteClient()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"/api/Clients/{currentClient.ClientId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadClients();
+                showDeleteModal = false;
+            }
+            else
+            {
+                errorMessage = $"Error deleting client: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception deleting client: {ex.Message}";
+        }
+    }
+}
