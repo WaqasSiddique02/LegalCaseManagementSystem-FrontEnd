@@ -1,0 +1,449 @@
+﻿@page "/invoice-management"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using LegalCaseManagementSystem_FrontEnd.Components.Layout
+@using LegalCaseManagementSystem_FrontEnd.Models
+@using System.Text.Json
+@using System.Text.Json.Serialization
+
+<Navbar />
+<NavMenu />
+
+<div class="client-management-container">
+    <h3>Invoice Management</h3>
+
+    <div class="management-actions mb-4">
+        <div class="row align-items-center flex-wrap">
+            <div class="col-auto">
+                <div class="input-group" style="max-width: 200px;">
+                    <span class="input-group-text" style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px 0 0 6px; padding: 6px 8px;">
+                        <i class="bi bi-search" style="font-size: 14px;"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Search invoices..." @bind="searchTerm" @bind:event="oninput"
+                           style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; padding: 6px 10px; border-radius: 0 6px 6px 0; outline: none; transition: border-color 0.2s ease-in-out;"
+                           onfocus="this.style.borderColor='var(--primary-color)'; this.style.boxShadow='0 0 5px rgba(0, 123, 255, 0.3);'"
+                           onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';" />
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="input-group" style="max-width: 180px; margin-left: 10px;">
+                    <span class="input-group-text" style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px 0 0 6px; padding: 6px 8px;">
+                        <i class="bi bi-filter" style="font-size: 14px;"></i>
+                    </span>
+                    <select class="form-select" @bind="selectedStatus"
+                            style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; padding: 6px 10px; border-radius: 0 6px 6px 0; outline: none; transition: border-color 0.2s ease-in-out;"
+                            onfocus="this.style.borderColor='var(--primary-color)'; this.style.boxShadow='0 0 5px rgba(0, 123, 255, 0.3);'"
+                            onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';">
+                        <option value="">All Statuses</option>
+                        <option value="Unpaid">Unpaid</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Overdue">Overdue</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="input-group" style="max-width: 180px; margin-left: 10px;">
+                    <span class="input-group-text" style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 6px 0 0 6px; padding: 6px 8px;">
+                        <i class="bi bi-briefcase" style="font-size: 14px;"></i>
+                    </span>
+                    <select class="form-select" @bind="selectedCaseId"
+                            style="background-color: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-color); font-size: 14px; padding: 6px 10px; border-radius: 0 6px 6px 0; outline: none; transition: border-color 0.2s ease-in-out;"
+                            onfocus="this.style.borderColor='var(--primary-color)'; this.style.boxShadow='0 0 5px rgba(0, 123, 255, 0.3);'"
+                            onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';">
+                        <option value="">All Cases</option>
+                        @foreach (var caseItem in cases)
+                        {
+                            <option value="@caseItem.CaseId">@caseItem.Title (ID: @caseItem.CaseId)</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+            <button class="btn btn-primary" @onclick="ShowAddModal"
+                    style="background-color: var(--primary-color); border: none; color: #fff; font-size: 14px; padding: 6px 20px; border-radius: 6px;font-weight: 500; transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;"
+                    onmouseover="this.style.backgroundColor='#0056b3'; this.style.boxShadow='0 2px 5px rgba(0, 0, 0, 0.2)';"
+                    onmouseout="this.style.backgroundColor='var(--primary-color)'; this.style.boxShadow='none';">
+                <i class="bi bi-plus-circle" style="font-size: 14px; margin-right: 5px;"></i>Add
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Case Title</th>
+                        <th scope="col">Client Name</th>
+                        <th scope="col">Lawyer Name</th>
+                        <th scope="col">Payment Status</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var invoice in FilteredInvoices)
+                    {
+                        var caseItem = cases.FirstOrDefault(c => c.CaseId == invoice.CaseId);
+                        var client = clients.FirstOrDefault(c => c.ClientId == caseItem?.ClientId);
+                        var lawyer = lawyers.FirstOrDefault(l => l.LawyerId == caseItem?.LawyerId);
+                        <tr>
+                            <td>@(caseItem?.Title ?? "Unknown")</td>
+                            <td>@(client?.FullName ?? "Unknown")</td>
+                            <td>@(lawyer?.FullName ?? "Unknown")</td>
+                            <td>
+                                <span class="badge @(GetStatusBadgeClass(invoice.Status))">
+                                    @invoice.Status
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-warning btn-sm me-2" title="Edit Invoice" @onclick="() => ShowEditModal(invoice)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" title="Delete Invoice" @onclick="() => ShowDeleteModal(invoice)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Add/Edit Modal -->
+@if (showModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditing ? "Edit Invoice" : "Add New Invoice")</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!isEditing)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Case</label>
+                            <select class="form-select" @bind="currentInvoice.CaseId" required>
+                                <option value="0" disabled selected>Select a case</option>
+                                @foreach (var caseItem in cases)
+                                {
+                                    <option value="@caseItem.CaseId">@caseItem.Title (ID: @caseItem.CaseId)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" class="form-control" @bind="currentInvoice.Amount" min="0" step="0.01" required />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" @bind="currentInvoice.Status" required>
+                                <option value="Unpaid">Unpaid</option>
+                                <option value="Paid">Paid</option>
+                                <option value="luence"></option>
+                            </select>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveInvoice">
+                        @(isEditing ? "Update" : "Create")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDeleteModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @{
+                        var caseItem = cases.FirstOrDefault(c => c.CaseId == currentInvoice.CaseId);
+                    }
+                    <p>Are you sure you want to delete invoice for <strong>@(caseItem?.Title ?? "Unknown")</strong>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteInvoice">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    public int? caseId { get; set; }
+
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+    private List<Invoice> invoices = new();
+    private List<Case> cases = new();
+    private List<Client> clients = new();
+    private List<Lawyer> lawyers = new();
+    private string searchTerm = string.Empty;
+    private string selectedStatus = string.Empty;
+    private int? selectedCaseId;
+    private bool showModal = false;
+    private bool showDeleteModal = false;
+    private bool isEditing = false;
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private Invoice currentInvoice = new();
+
+    private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        selectedCaseId = caseId;
+        await LoadData();
+    }
+
+    private List<Invoice> FilteredInvoices => invoices
+        .Where(i => (string.IsNullOrEmpty(selectedStatus) || i.Status == selectedStatus) &&
+                    (!selectedCaseId.HasValue || i.CaseId == selectedCaseId.Value) &&
+                    (string.IsNullOrEmpty(searchTerm) ||
+                     (cases.FirstOrDefault(c => c.CaseId == i.CaseId)?.Title?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                     (clients.FirstOrDefault(c => c.ClientId == cases.FirstOrDefault(c => c.CaseId == i.CaseId)?.ClientId)?.FullName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                     (lawyers.FirstOrDefault(l => l.LawyerId == cases.FirstOrDefault(c => c.CaseId == i.CaseId)?.LawyerId)?.FullName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                     i.Status.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
+        .ToList();
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Unpaid" => "badge-unpaid",
+            "Paid" => "badge-paid",
+            "Overdue" => "badge-overdue",
+            _ => "badge-secondary"
+        };
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Fetch clients
+            var clientResponse = await Http.GetAsync("/api/Clients");
+            if (!clientResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading clients: {clientResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            var clientContent = await clientResponse.Content.ReadAsStringAsync();
+            clients = JsonSerializer.Deserialize<List<Client>>(clientContent, jsonOptions) ?? new();
+
+            // Fetch lawyers
+            var lawyerResponse = await Http.GetAsync("/api/Lawyers");
+            if (!lawyerResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading lawyers: {lawyerResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            var lawyerContent = await lawyerResponse.Content.ReadAsStringAsync();
+            lawyers = JsonSerializer.Deserialize<List<Lawyer>>(lawyerContent, jsonOptions) ?? new();
+
+            // Fetch cases
+            var caseResponse = await Http.GetAsync("/api/Cases");
+            if (!caseResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading cases: {caseResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            var caseContent = await caseResponse.Content.ReadAsStringAsync();
+            cases = JsonSerializer.Deserialize<List<Case>>(caseContent, jsonOptions) ?? new();
+
+            // Fetch invoices for all cases
+            invoices.Clear();
+            foreach (var caseItem in cases)
+            {
+                var invoiceResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Invoices");
+                if (invoiceResponse.IsSuccessStatusCode)
+                {
+                    var caseInvoices = await invoiceResponse.Content.ReadFromJsonAsync<List<Invoice>>(jsonOptions) ?? new();
+                    invoices.AddRange(caseInvoices);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading data: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        currentInvoice = new Invoice
+            {
+                Amount = 0,
+                IssuedDate = DateTime.UtcNow,
+                Status = "Unpaid"
+            };
+        isEditing = false;
+        showModal = true;
+        StateHasChanged();
+    }
+
+    private void ShowEditModal(Invoice invoice)
+    {
+        currentInvoice = new Invoice
+            {
+                InvoiceId = invoice.InvoiceId,
+                CaseId = invoice.CaseId,
+                Amount = invoice.Amount,
+                IssuedDate = invoice.IssuedDate,
+                Status = invoice.Status
+            };
+        isEditing = true;
+        showModal = true;
+        StateHasChanged();
+    }
+
+    private async Task CloseModal()
+    {
+        showModal = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ShowDeleteModal(Invoice invoice)
+    {
+        currentInvoice = invoice;
+        showDeleteModal = true;
+        StateHasChanged();
+    }
+
+    private async Task SaveInvoice()
+    {
+        try
+        {
+            if (isEditing)
+            {
+                var invoiceToSave = new
+                {
+                    Status = currentInvoice.Status
+                };
+
+                var response = await Http.PutAsJsonAsync($"/api/cases/{currentInvoice.CaseId}/Invoices/{currentInvoice.InvoiceId}", invoiceToSave);
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadData();
+                    showModal = false;
+                }
+                else
+                {
+                    errorMessage = $"Error updating invoice: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+            else
+            {
+                var invoiceToSave = new
+                {
+                    Amount = currentInvoice.Amount
+                };
+
+                var response = await Http.PostAsJsonAsync($"/api/cases/{currentInvoice.CaseId}/Invoices", invoiceToSave);
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadData();
+                    showModal = false;
+                }
+                else
+                {
+                    errorMessage = $"Error creating invoice: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception saving invoice: {ex.Message}";
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task DeleteInvoice()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"/api/cases/{currentInvoice.CaseId}/Invoices/{currentInvoice.InvoiceId}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+                showDeleteModal = false;
+            }
+            else
+            {
+                errorMessage = $"Error deleting invoice: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception deleting invoice: {ex.Message}";
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

@@ -1,5 +1,8 @@
-﻿@using LegalCaseManagementSystem_FrontEnd.Models
-@inject HttpClient Http
+﻿@inject IHttpClientFactory HttpClientFactory
+@rendermode InteractiveServer
+@using LegalCaseManagementSystem_FrontEnd.Models
+@using System.Text.Json
+@using System.Text.Json.Serialization
 
 <main role="main" class="col-md-9 ml-sm-auto col-lg-10 my-3">
     @if (isLoading)
@@ -10,10 +13,10 @@
             </div>
         </div>
     }
-    else if (hasError)
+    else if (!string.IsNullOrEmpty(errorMessage))
     {
         <div class="alert alert-danger">
-            Error loading data. Please try again later.
+            @errorMessage
         </div>
     }
     else
@@ -23,25 +26,40 @@
                 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
                     <div class="card blue">
                         <div class="title">All Cases</div>
-                        <div class="value">@(cases?.Count ?? 0)</div>
+                        <div class="value">@cases.Count</div>
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
                     <div class="card green">
+<<<<<<< HEAD
                         <div class="title">Pending cases</div>
                         <div class="value">@(cases?.Count(c => c?.Status == CaseStatus.Pending) ?? 0)</div>
+=======
+                        <div class="title">Open Cases</div>
+                        <div class="value">@cases.Count(c => c.Status == CaseStatus.Open)</div>
+>>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
                     <div class="card orange">
+<<<<<<< HEAD
                         <div class="title">Completed Cases</div>
                         <div class="value">@(cases?.Count(c => c?.Status == CaseStatus.Completed) ?? 0)</div>
+=======
+                        <div class="title">Pending Cases</div>
+                        <div class="value">@cases.Count(c => c.Status == CaseStatus.Pending)</div>
+>>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
                     <div class="card red">
+<<<<<<< HEAD
                         <div class="title">Active Cases</div>
                         <div class="value">@(cases?.Count(c => c?.Status == CaseStatus.Active) ?? 0)</div>
+=======
+                        <div class="title">Closed Cases</div>
+                        <div class="value">@cases.Count(c => c.Status == CaseStatus.Closed)</div>
+>>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                     </div>
                 </div>
             </div>
@@ -51,9 +69,9 @@
             <div class="projects-inner">
                 <header class="projects-header">
                     <div class="title">Recent Cases</div>
-                    <div class="count">| @(recentCases?.Count ?? 0) Cases</div>
+                    <div class="count">| @recentCases.Count Cases</div>
                 </header>
-                @if (recentCases?.Any() == true)
+                @if (recentCases.Any())
                 {
                     <table class="projects-table">
                         <thead>
@@ -67,15 +85,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var caseItem in recentCases!)
+                            @foreach (var caseItem in recentCases)
                             {
-                                var hearing = caseHearings?.FirstOrDefault(h => h?.CaseId == caseItem?.CaseId);
-                                var client = clients?.FirstOrDefault(c => c?.ClientId == caseItem?.ClientId);
-                                var lawyer = lawyers?.FirstOrDefault(l => l?.LawyerId == caseItem?.LawyerId);
+                                var hearing = caseHearings.FirstOrDefault(h => h.CaseId == caseItem.CaseId);
+                                var client = clients.FirstOrDefault(c => c.ClientId == caseItem.ClientId);
+                                var lawyer = lawyers.FirstOrDefault(l => l.LawyerId == caseItem.LawyerId);
 
                                 <tr>
                                     <td>
-                                        <p>@(caseItem?.Title ?? "N/A")</p>
+                                        <p>@caseItem.Title</p>
                                     </td>
                                     <td>
                                         @if (hearing != null && hearing.HearingDate != default)
@@ -101,9 +119,9 @@
                                     </td>
                                     <td class="status">
                                         @{
-                                            var statusClass = "status-blue";
-                                            if (caseItem?.Status != null)
+                                            var statusClass = caseItem.Status switch
                                             {
+<<<<<<< HEAD
                                                 statusClass = caseItem.Status switch
                                                 {
                                                     CaseStatus.Pending => "status-red",
@@ -114,9 +132,18 @@
                                             }
                                         }
                                         <span class="status-text @statusClass">@(caseItem?.Status.ToString() ?? "Unknown")</span>
+=======
+                                                CaseStatus.Pending => "status-red",
+                                                CaseStatus.Open => "status-orange",
+                                                CaseStatus.Closed => "status-green",
+                                                _ => "status-blue"
+                                            };
+                                        }
+                                        <span class="status-text @statusClass">@caseItem.Status</span>
+>>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                                     </td>
                                     <td>
-                                        <p>@(caseItem?.StartDate.ToString("dd-MM-yyyy") ?? "N/A")</p>
+                                        <p>@caseItem.StartDate.ToString("dd-MM-yyyy")</p>
                                     </td>
                                 </tr>
                             }
@@ -138,14 +165,21 @@
                     <div class="chart radar-chart dark">
                         <h3 class="title">Pending Cases</h3>
                         <p class="tagline">Current Year</p>
+<<<<<<< HEAD
                         @if (cases?.Any(c => c?.Status == CaseStatus.Pending) == true)
                         {
                             <div class="case-list">
                                 @foreach (var caseItem in cases.Where(c => c?.Status == CaseStatus.Pending).Take(5))
+=======
+                        @if (cases.Any(c => c.Status == CaseStatus.Pending))
+                        {
+                            <div class="case-list">
+                                @foreach (var caseItem in cases.Where(c => c.Status == CaseStatus.Pending).Take(5))
+>>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                                 {
-                                    var client = clients?.FirstOrDefault(c => c?.ClientId == caseItem?.ClientId);
+                                    var client = clients.FirstOrDefault(c => c.ClientId == caseItem.ClientId);
                                     <div class="case-item">
-                                        <strong>@(caseItem?.Title ?? "N/A")</strong>
+                                        <strong>@caseItem.Title</strong>
                                         <span>Client: @(client?.FullName ?? "Unknown")</span>
                                     </div>
                                 }
@@ -159,16 +193,23 @@
                 </div>
                 <div class="col-12 col-md-4">
                     <div class="chart bar-chart light">
-                        <h3 class="title">Completed Cases</h3>
+                        <h3 class="title">Closed Cases</h3>
                         <p class="tagline">Distribution</p>
+<<<<<<< HEAD
                         @if (cases?.Any(c => c?.Status == CaseStatus.Completed) == true)
                         {
                             <div class="case-list">
                                 @foreach (var caseItem in cases.Where(c => c?.Status == CaseStatus.Completed).Take(5))
+=======
+                        @if (cases.Any(c => c.Status == CaseStatus.Closed))
+                        {
+                            <div class="case-list">
+                                @foreach (var caseItem in cases.Where(c => c.Status == CaseStatus.Closed).Take(5))
+>>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                                 {
-                                    var client = clients?.FirstOrDefault(c => c?.ClientId == caseItem?.ClientId);
+                                    var client = clients.FirstOrDefault(c => c.ClientId == caseItem.ClientId);
                                     <div class="case-item">
-                                        <strong>@(caseItem?.Title ?? "N/A")</strong>
+                                        <strong>@caseItem.Title</strong>
                                         <span>Client: @(client?.FullName ?? "Unknown")</span>
                                     </div>
                                 }
@@ -176,7 +217,7 @@
                         }
                         else
                         {
-                            <div class="alert alert-info">No completed cases found</div>
+                            <div class="alert alert-info">No closed cases found</div>
                         }
                     </div>
                 </div>
@@ -184,14 +225,14 @@
                     <div class="chart doughnut-chart dark">
                         <h3 class="title">All Cases</h3>
                         <p class="tagline">Current</p>
-                        @if (cases?.Any() == true)
+                        @if (cases.Any())
                         {
                             <div class="case-list">
                                 @foreach (var caseItem in cases.Take(5))
                                 {
-                                    var client = clients?.FirstOrDefault(c => c?.ClientId == caseItem?.ClientId);
+                                    var client = clients.FirstOrDefault(c => c.ClientId == caseItem.ClientId);
                                     <div class="case-item">
-                                        <strong>@(caseItem?.Title ?? "N/A")</strong>
+                                        <strong>@caseItem.Title</strong>
                                         <span>Client: @(client?.FullName ?? "Unknown")</span>
                                     </div>
                                 }
@@ -209,18 +250,29 @@
 </main>
 
 @code {
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
     private bool isLoading = true;
-    private bool hasError = false;
-    private List<Case>? cases = new List<Case>();
-    private List<Case>? recentCases = new List<Case>();
-    private List<Client>? clients = new List<Client>();
-    private List<Lawyer>? lawyers = new List<Lawyer>();
-    private List<Hearing>? caseHearings = new List<Hearing>();
+    private string? errorMessage;
+    private List<Case> cases = [];
+    private List<Case> recentCases = [];
+    private List<Client> clients = [];
+    private List<Lawyer> lawyers = [];
+    private List<Hearing> caseHearings = [];
+
+    private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
 
     protected override async Task OnInitializedAsync()
     {
+        isLoading = true;
+        errorMessage = null;
+
         try
         {
+<<<<<<< HEAD
             // Initialize with empty lists to prevent null reference exceptions
             cases = new List<Case>();
             clients = new List<Client>();
@@ -230,53 +282,53 @@
             var casesTask = SafeGetFromJsonAsync<List<Case>>("/api/Cases");
             var clientsTask = SafeGetFromJsonAsync<List<Client>>("/api/Clients");
             var lawyersTask = SafeGetFromJsonAsync<List<Lawyer>>("/api/Lawyers");
+=======
+            // Fetch cases, clients, and lawyers in parallel
+            var casesTask = Http.GetFromJsonAsync<List<Case>>("/api/Cases", jsonOptions);
+            var clientsTask = Http.GetFromJsonAsync<List<Client>>("/api/Clients", jsonOptions);
+            var lawyersTask = Http.GetFromJsonAsync<List<Lawyer>>("/api/Lawyers", jsonOptions);
+>>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
 
             await Task.WhenAll(casesTask, clientsTask, lawyersTask);
 
-            cases = await casesTask ?? new List<Case>();
-            clients = await clientsTask ?? new List<Client>();
-            lawyers = await lawyersTask ?? new List<Lawyer>();
+            cases = casesTask.Result ?? [];
+            clients = clientsTask.Result ?? [];
+            lawyers = lawyersTask.Result ?? [];
 
-            recentCases = cases?.Where(c => c != null)
-                              .OrderByDescending(c => c?.StartDate ?? DateTime.MinValue)
-                              .Take(5)
-                              .ToList() ?? new List<Case>();
+            // Select recent cases (last 5 by StartDate)
+            recentCases = cases
+                .OrderByDescending(c => c.StartDate)
+                .Take(5)
+                .ToList();
 
-            if (recentCases?.Any() == true)
+            // Fetch hearings for recent cases only
+            if (recentCases.Any())
             {
-                var hearingTasks = recentCases.Select(c =>
-                    SafeGetFromJsonAsync<List<Hearing>>($"/api/cases/{c?.CaseId}/Hearings")).ToList();
-
+                var hearingTasks = recentCases
+                    .Select(c => Http.GetFromJsonAsync<List<Hearing>>($"/api/Cases/{c.CaseId}/Hearings", jsonOptions))
+                    .Take(5)
+                    .ToList();
                 var hearingsResults = await Task.WhenAll(hearingTasks);
-                caseHearings = hearingsResults?.SelectMany(h => h ?? new List<Hearing>())
-                                             .Where(h => h != null)
-                                             .ToList() ?? new List<Hearing>();
+                caseHearings = hearingsResults
+                    .SelectMany(h => h ?? [])
+                    .Take(5)
+                    .ToList();
             }
-
-            isLoading = false;
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = $"Failed to fetch data from API: {ex.Message}";
+            Console.WriteLine($"HTTP error: {ex}");
         }
         catch (Exception ex)
         {
+            errorMessage = $"Error loading dashboard data: {ex.Message}";
+            Console.WriteLine($"Exception: {ex}");
+        }
+        finally
+        {
             isLoading = false;
-            hasError = true;
-            Console.WriteLine($"Error loading data: {ex.Message}");
-        }
-    }
-
-    private async Task<T?> SafeGetFromJsonAsync<T>(string requestUri) where T : class, new()
-    {
-        try
-        {
-            var response = await Http.GetAsync(requestUri);
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<T>() ?? new T();
-            }
-            return new T();
-        }
-        catch
-        {
-            return new T();
+            StateHasChanged();
         }
     }
 }

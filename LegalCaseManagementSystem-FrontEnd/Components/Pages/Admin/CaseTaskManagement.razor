@@ -1,0 +1,383 @@
+﻿@page "/case-tasks/{caseId:int}"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using LegalCaseManagementSystem_FrontEnd.Components.Layout
+@using LegalCaseManagementSystem_FrontEnd.Models
+
+<Navbar />
+<NavMenu />
+
+<div class="client-management-container">
+    <h3>Case Task Management - Case #@caseId</h3>
+
+    <div class="management-actions mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Search tasks..." @bind="searchTerm" @bind:event="oninput" />
+                </div>
+            </div>
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-filter"></i>
+                    </span>
+                    <select class="form-select" @bind="selectedStatus">
+                        <option value="">All</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <button class="btn btn-primary" @onclick="ShowAddModal">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Task
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Task ID</th>
+                        <th scope="col">Title</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Created At</th>
+                        <th scope="col">Completed At</th>
+                        <th scope="col">Assigned Lawyer</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var task in FilteredTasks)
+                    {
+                        <tr>
+                            <td>@task.TaskId</td>
+                            <td>@task.Title</td>
+                            <td>@(task.Description ?? "N/A")</td>
+                            <td>
+                                <span class="badge @(GetStatusBadgeClass(task.Status))">
+                                    @task.Status
+                                </span>
+                            </td>
+                            <td>@task.CreatedAt.ToString("g")</td>
+                            <td>@(task.CompletedAt?.ToString("g") ?? "N/A")</td>
+                            <td>@(task.AssignedToLawyer?.FullName ?? task.AssignedToLawyerId?.ToString() ?? "Unassigned")</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm me-2" title="Edit Task" @onclick="() => ShowEditModal(task)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" title="Delete Task" @onclick="() => ShowDeleteModal(task)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Add/Edit Modal -->
+@if (showModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditing ? "Edit Task" : "Add New Task")</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" @bind="currentTask.Title" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="4" @bind="currentTask.Description"></textarea>
+                    </div>
+                    @if (isEditing)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" @bind="currentTask.Status" required>
+                                <option value="Pending">Pending</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Completed At</label>
+                            <input type="datetime-local" class="form-control" @bind="currentTask.CompletedAt" disabled="@(currentTask.Status != "Completed")" />
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label">Assigned Lawyer</label>
+                        <select class="form-select" @bind="currentTask.AssignedToLawyerId">
+                            <option value="">Unassigned</option>
+                            @foreach (var lawyer in lawyers)
+                            {
+                                <option value="@lawyer.LawyerId">@lawyer.FullName</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveTask">
+                        @(isEditing ? "Update" : "Create")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDeleteModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete task <strong>@currentTask.Title</strong>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteTask">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int caseId { get; set; }
+
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+    private List<CaseTask> tasks = new();
+    private List<Lawyer> lawyers = new();
+    private string searchTerm = string.Empty;
+    private string selectedStatus = string.Empty;
+    private bool showModal = false;
+    private bool showDeleteModal = false;
+    private bool isEditing = false;
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private CaseTask currentTask = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private List<CaseTask> FilteredTasks => tasks
+        .Where(t => (string.IsNullOrEmpty(selectedStatus) || t.Status == selectedStatus) &&
+                    (string.IsNullOrEmpty(searchTerm) ||
+                     t.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     (t.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                     t.Status.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     (t.AssignedToLawyer?.FullName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)))
+        .ToList();
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "badge-pending",
+            "Completed" => "badge-completed",
+            _ => "badge-secondary"
+        };
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Fetch tasks
+            var taskResponse = await Http.GetAsync($"/api/cases/{caseId}/CaseTasks");
+            if (!taskResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading tasks: {taskResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            tasks = await taskResponse.Content.ReadFromJsonAsync<List<CaseTask>>() ?? new();
+
+            // Fetch lawyers
+            var lawyerResponse = await Http.GetAsync("/api/Lawyers");
+            if (!lawyerResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading lawyers: {lawyerResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            lawyers = await lawyerResponse.Content.ReadFromJsonAsync<List<Lawyer>>() ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading data: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        currentTask = new CaseTask
+            {
+                CaseId = caseId,
+                Status = "Pending",
+                CreatedAt = DateTime.UtcNow
+            };
+        isEditing = false;
+        showModal = true;
+    }
+
+    private void ShowEditModal(CaseTask task)
+    {
+        currentTask = new CaseTask
+            {
+                TaskId = task.TaskId,
+                CaseId = task.CaseId,
+                Title = task.Title,
+                Description = task.Description,
+                Status = task.Status,
+                CreatedAt = task.CreatedAt,
+                CompletedAt = task.CompletedAt,
+                AssignedToLawyerId = task.AssignedToLawyerId
+            };
+        isEditing = true;
+        showModal = true;
+    }
+
+    private void ShowDeleteModal(CaseTask task)
+    {
+        currentTask = task;
+        showDeleteModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+    }
+
+    private async Task SaveTask()
+    {
+        try
+        {
+            if (isEditing)
+            {
+                var taskToSave = new
+                {
+                    Title = currentTask.Title,
+                    Description = currentTask.Description,
+                    Status = currentTask.Status,
+                    AssignedToLawyerId = currentTask.AssignedToLawyerId,
+                    CompletedAt = currentTask.Status == "Completed" ? currentTask.CompletedAt?.ToUniversalTime().ToString("O") : null
+                };
+
+                var response = await Http.PutAsJsonAsync($"/api/cases/{caseId}/CaseTasks/{currentTask.TaskId}", taskToSave);
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadData();
+                    showModal = false;
+                }
+                else
+                {
+                    errorMessage = $"Error updating task: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+            else
+            {
+                var taskToSave = new
+                {
+                    Title = currentTask.Title,
+                    Description = currentTask.Description,
+                    AssignedToLawyerId = currentTask.AssignedToLawyerId
+                };
+
+                var response = await Http.PostAsJsonAsync($"/api/cases/{caseId}/CaseTasks", taskToSave);
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadData();
+                    showModal = false;
+                }
+                else
+                {
+                    errorMessage = $"Error creating task: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception saving task: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteTask()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"/api/cases/{caseId}/CaseTasks/{currentTask.TaskId}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadData();
+                showDeleteModal = false;
+            }
+            else
+            {
+                errorMessage = $"Error deleting task: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception deleting task: {ex.Message}";
+        }
+    }
+}

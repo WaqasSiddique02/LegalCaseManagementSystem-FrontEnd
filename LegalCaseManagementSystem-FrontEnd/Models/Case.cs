@@ -1,14 +1,24 @@
 ﻿using System.Reflection.Metadata;
+<<<<<<< HEAD
+=======
+
+>>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
 namespace LegalCaseManagementSystem_FrontEnd.Models
 {
     public enum CaseStatus
     {
+<<<<<<< HEAD
         Pending,
         Active,
         Completed,
         InProgress,
         Open,
         Closed
+=======
+        Open,
+        Closed,
+        Pending
+>>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
     }
 
     public class Case

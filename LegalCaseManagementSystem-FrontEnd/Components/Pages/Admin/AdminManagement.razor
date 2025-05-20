@@ -1,0 +1,334 @@
+﻿@page "/admin-management"
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using LegalCaseManagementSystem_FrontEnd.Components.Layout
+@using LegalCaseManagementSystem_FrontEnd.Models
+
+<Navbar />
+<NavMenu />
+
+<div class="client-management-container">
+    <h3>Admin Management</h3>
+
+    <div class="management-actions mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Search admins..." @bind="searchTerm" @bind:event="oninput" />
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <button class="btn btn-primary" @onclick="ShowAddModal">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Admin
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Username</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Role</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in FilteredUsers)
+                    {
+                        <tr>
+                            <td>@user.Username</td>
+                            <td>@user.Email</td>
+                            <td>
+                                <span class="badge badge-admin">
+                                    @user.Role
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-warning btn-sm me-2" title="Edit Admin" @onclick="() => ShowEditModal(user)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" title="Delete Admin" @onclick="() => ShowDeleteModal(user)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Add/Edit Modal -->
+@if (showModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditing ? "Edit Admin" : "Add New Admin")</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" @bind="currentUser.Username" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" @bind="currentUser.Email" required />
+                    </div>
+                    @if (!isEditing)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" @bind="currentUser.PasswordHash" required />
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <input type="text" class="form-control" value="Admin" readonly />
+                        <input type="hidden" @bind="currentUser.Role" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveUser">
+                        @(isEditing ? "Update" : "Create")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDeleteModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete admin <strong>@currentUser.Username</strong>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteUser">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+    private List<User> users = new();
+    private string searchTerm = string.Empty;
+    private bool showModal = false;
+    private bool showDeleteModal = false;
+    private bool isEditing = false;
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private User currentUser = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private List<User> FilteredUsers => users
+        .Where(u => u.Role == "Admin" &&
+                    (string.IsNullOrEmpty(searchTerm) ||
+                     u.Username.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                     u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
+        .ToList();
+
+    private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            "Admin" => "badge-admin",
+            "Lawyer" => "badge-lawyer",
+            "Client" => "badge-client",
+            "Staff" => "badge-staff",
+            _ => "badge-secondary"
+        };
+    }
+
+    private async Task LoadUsers()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var response = await Http.GetAsync("/api/Users");
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading users: {response.StatusCode}";
+                isLoading = false;
+                return;
+            }
+
+            users = (await response.Content.ReadFromJsonAsync<List<User>>() ?? new())
+                .Where(u => u.Role == "Admin")
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading users: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        currentUser = new User
+            {
+                Role = "Admin" // Fixed role for new admins
+            };
+        isEditing = false;
+        showModal = true;
+    }
+
+    private void ShowEditModal(User user)
+    {
+        currentUser = new User
+            {
+                UserId = user.UserId,
+                Username = user.Username,
+                Email = user.Email,
+                Role = "Admin" // Ensure role remains Admin
+            };
+        isEditing = true;
+        showModal = true;
+    }
+
+    private void ShowDeleteModal(User user)
+    {
+        currentUser = user;
+        showDeleteModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+    }
+
+    private async Task SaveUser()
+    {
+        try
+        {
+            if (isEditing)
+            {
+                var userToUpdate = new
+                {
+                    Username = currentUser.Username,
+                    Email = currentUser.Email,
+                    Role = "Admin" // Fixed role
+                };
+
+                var response = await Http.PutAsJsonAsync($"/api/Users/{currentUser.UserId}", userToUpdate);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadUsers();
+                    showModal = false;
+                }
+                else
+                {
+                    errorMessage = $"Error updating admin: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+            else
+            {
+                var newUser = new
+                {
+                    Username = currentUser.Username,
+                    Email = currentUser.Email,
+                    Password = currentUser.PasswordHash, // Sent as plain password, hashed server-side
+                    Role = "Admin" // Fixed role
+                };
+
+                var response = await Http.PostAsJsonAsync("/api/Users", newUser);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadUsers();
+                    showModal = false;
+                }
+                else
+                {
+                    errorMessage = $"Error creating admin: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception saving admin: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteUser()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"/api/Users/{currentUser.UserId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadUsers();
+                showDeleteModal = false;
+            }
+            else
+            {
+                errorMessage = $"Error deleting admin: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception deleting admin: {ex.Message}";
+        }
+    }
+}

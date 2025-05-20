@@ -1,6 +1,5 @@
 using LegalCaseManagementSystem_FrontEnd.Configuration;
 using LegalCaseManagementSystem_FrontEnd.Components;
-using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,17 +7,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-
-// Register ApiSettings from appsettings.json
+// Configuration
 builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
-builder.Services.AddScoped(sp => new HttpClient
+
+builder.Services.AddHttpClient("ApiClient", client =>
 {
-    BaseAddress = new Uri("https://localhost:7285/")
+    client.BaseAddress = new Uri(builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7285");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
-
-// Register HttpClient
-builder.Services.AddHttpClient();  // Built-in HttpClient
-
 
 var app = builder.Build();
 
@@ -26,12 +23,10 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 app.UseAntiforgery();
 

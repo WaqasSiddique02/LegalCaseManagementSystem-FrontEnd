@@ -9,95 +9,159 @@
 
 <div class="register-container">
     <div class="register-card">
-        <div class="register-header">
-            <h2>Create Your Account</h2>
-            <p>Join our legal case management system to streamline your workflow</p>
-        </div>
-
         <div class="register-content">
+            <div class="register-header">
+                <img src="/images/law.png" alt="Register page image" />
+                <h1>Sign Up</h1>
+                <p class="subtitle">Join our professional legal network today</p>
+            </div>
+
             @if (registrationSuccess)
             {
-                <div class="register-success">
-                    <i class="bi bi-check-circle-fill"></i> Registration successful! Welcome, @registrationModel.Username.
-                    <p>You will be redirected to the login page shortly...</p>
+                <div class="success-state">
+                    <div class="success-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Registration Successful!</h3>
+                    <p>You'll be redirected to login shortly</p>
                 </div>
             }
             else
             {
-                <h4>Register Now</h4>
-                <p class="register-link">Already have an account? <a href="/login">Sign in here</a></p>
-
-                <EditForm Model="registrationModel" OnValidSubmit="HandleRegistrationAsync">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
-
-                    <div class="input-group">
-                        <InputText class="form-input" placeholder="Username" @bind-Value="registrationModel.Username" />
-                        <ValidationMessage For="@(() => registrationModel.Username)" />
-                    </div>
-
-                    <div class="input-group">
-                        <InputText class="form-input" placeholder="Email Address" @bind-Value="registrationModel.Email" />
-                        <ValidationMessage For="@(() => registrationModel.Email)" />
-                    </div>
-
-                    <div class="input-group">
-                        <InputText type="password" class="form-input" placeholder="Password" @bind-Value="registrationModel.Password" />
-                        <ValidationMessage For="@(() => registrationModel.Password)" />
-                    </div>
-
-                    <div class="input-group">
-                        <InputText class="form-input" placeholder="Full Name" @bind-Value="registrationModel.FullName" />
-                        <ValidationMessage For="@(() => registrationModel.FullName)" />
-                    </div>
-
-                    <div class="input-group">
-                        <InputSelect class="form-input" @bind-Value="registrationModel.UserType" onchange="HandleUserTypeChange">
-                            <option value="">Select User Type</option>
-                            <option value="Client">Client</option>
-                            <option value="Lawyer">Lawyer</option>
-                        </InputSelect>
-                        <ValidationMessage For="@(() => registrationModel.UserType)" />
-                    </div>
-
-                    @if (showLawyerFields)
-                    {
-                        <div class="input-group">
-                            <InputText class="form-input" placeholder="Specialization" @bind-Value="registrationModel.Specialization" />
+                <form class="register-form" @onsubmit="HandleRegistrationAsync">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <div class="input-with-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                                <input type="text" id="username" @bind="registrationModel.Username" placeholder="johndoe" required />
+                            </div>
                         </div>
-                    }
 
-                    @if (showClientFields)
-                    {
-                        <div class="input-group">
-                            <InputText class="form-input" placeholder="Contact Info" @bind-Value="registrationModel.ContactInfo" />
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <div class="input-with-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg>
+                                <input type="email" id="email" @bind="registrationModel.Email" placeholder="john@example.com" required />
+                            </div>
                         </div>
-                    }
 
-                    <button class="register-button" type="submit" disabled="@isLoading">
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <div class="input-with-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                                <input type="password" id="password" @bind="registrationModel.Password" placeholder="••••••••" required />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fullname">Full Name</label>
+                            <div class="input-with-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="8.5" cy="7" r="4"></circle>
+                                    <line x1="20" y1="8" x2="20" y2="14"></line>
+                                    <line x1="23" y1="11" x2="17" y2="11"></line>
+                                </svg>
+                                <input type="text" id="fullname" @bind="registrationModel.FullName" placeholder="John Doe" required />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="usertype">User Type</label>
+                            <div class="select-wrapper">
+                                <select id="usertype" @onchange="HandleUserTypeChange" required>
+                                    <option value="">Select your role</option>
+                                    <option value="Client">Client</option>
+                                    <option value="Lawyer">Lawyer</option>
+                                </select>
+                                <div class="select-arrow">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (showLawyerFields)
+                        {
+                            <div class="form-group">
+                                <label for="specialization">Specialization</label>
+                                <div class="input-with-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                    </svg>
+                                    <input type="text" id="specialization" @bind="registrationModel.Specialization" placeholder="Corporate Law, Family Law, etc." />
+                                </div>
+                            </div>
+                        }
+
+                        @if (showClientFields)
+                        {
+                            <div class="form-group">
+                                <label for="contactinfo">Contact Information</label>
+                                <div class="input-with-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                    </svg>
+                                    <input type="text" id="contactinfo" @bind="registrationModel.ContactInfo" placeholder="Phone number or alternative contact" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <button type="submit" class="register-button" disabled="@isLoading">
                         @if (isLoading)
                         {
-                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                            <span class="button-spinner">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="2" x2="12" y2="6"></line>
+                                    <line x1="12" y1="18" x2="12" y2="22"></line>
+                                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                                    <line x1="2" y1="12" x2="6" y2="12"></line>
+                                    <line x1="18" y1="12" x2="22" y2="12"></line>
+                                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                                </svg>
+                            </span>
+                            <span>Processing...</span>
                         }
                         else
                         {
-                            <i class="bi bi-person-plus-fill"></i>
+                            <span>Register Account</span>
                         }
-                        Register Now
                     </button>
-                </EditForm>
 
-                @if (registrationError)
-                {
-                    <div class="register-error">
-                        <i class="bi bi-exclamation-triangle-fill"></i> @errorMessage
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="error-message">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <span>@errorMessage</span>
+                        </div>
+                    }
+
+                    <div class="login-link">
+                        Already have an account? <a href="/login">Sign in here</a>
                     </div>
-                }
+                </form>
             }
-        </div>
-
-        <div class="register-footer">
-            © @DateTime.Now.Year LegalCase Management. All rights reserved.
         </div>
     </div>
 </div>
@@ -105,7 +169,6 @@
 @code {
     private RegistrationModel registrationModel = new();
     private bool registrationSuccess = false;
-    private bool registrationError = false;
     private bool isLoading = false;
     private string errorMessage = string.Empty;
     private bool showLawyerFields = false;
@@ -116,18 +179,16 @@
         registrationModel.UserType = e.Value?.ToString() ?? string.Empty;
         showLawyerFields = registrationModel.UserType == "Lawyer";
         showClientFields = registrationModel.UserType == "Client";
-        StateHasChanged();
     }
 
     private async Task HandleRegistrationAsync()
     {
-        registrationError = false;
+        errorMessage = string.Empty;
         isLoading = true;
 
         if (string.IsNullOrEmpty(registrationModel.UserType))
         {
             errorMessage = "Please select a user type";
-            registrationError = true;
             isLoading = false;
             return;
         }
@@ -147,13 +208,11 @@
             {
                 var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponse>();
                 errorMessage = errorResponse?.Message ?? "Registration failed. Please try again.";
-                registrationError = true;
             }
         }
         catch (Exception ex)
         {
             errorMessage = "An error occurred during registration. Please try again.";
-            registrationError = true;
             Console.WriteLine($"Registration error: {ex.Message}");
         }
         finally
@@ -165,15 +224,10 @@
     public class RegistrationModel
     {
         public string Username { get; set; } = string.Empty;
-
         public string Email { get; set; } = string.Empty;
-
         public string Password { get; set; } = string.Empty;
-
         public string FullName { get; set; } = string.Empty;
-
         public string UserType { get; set; } = string.Empty;
-
         public string? Specialization { get; set; }
         public string? ContactInfo { get; set; }
     }
