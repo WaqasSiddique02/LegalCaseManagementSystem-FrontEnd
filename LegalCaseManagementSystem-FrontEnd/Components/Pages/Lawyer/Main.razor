@@ -1,0 +1,481 @@
+﻿@page "/lawyer"
+@using LegalCaseManagementSystem_FrontEnd.Models
+@using System.ComponentModel.DataAnnotations
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<!-- Dashboard Container -->
+<div class="dashboard @(isDarkMode ? "dark-mode" : "")" @ref="dashboardRef">
+
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-left">
+            <h1>CounselConnect <span class="badge">PRO</span></h1>
+            <p class="text-muted">Your legal practice dashboard</p>
+        </div>
+        <div class="header-right">
+            <button class="btn btn-icon" @onclick="ToggleDarkMode">
+                <i class="fas @(isDarkMode ? "fa-sun" : "fa-moon")"></i>
+            </button>
+            <div class="user-dropdown">
+                <img src="https://ui-avatars.com/api/?name=@(lawyer?.FullName ?? "Lawyer")&background=4e73df&color=fff"
+                     class="user-avatar" />
+                <div class="dropdown-content">
+                    <a href="#"><i class="fas fa-user"></i> Profile</a>
+                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="dashboard-grid">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card" style="--card-color: #4e73df">
+                <div class="stat-icon">
+                    <i class="fas fa-gavel"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>@activeCasesCount</h3>
+                    <p>Active Cases</p>
+                    <span class="stat-trend positive">
+                        <i class="fas fa-arrow-up"></i> @activeCasesTrend%
+                    </span>
+                </div>
+            </div>
+
+            <div class="stat-card" style="--card-color: #1cc88a">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>@completedTasksCount</h3>
+                    <p>Tasks Completed</p>
+                    <span class="stat-trend positive">
+                        <i class="fas fa-arrow-up"></i> @completedTasksTrend%
+                    </span>
+                </div>
+            </div>
+
+            <div class="stat-card" style="--card-color: #f6c23e">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>@upcomingHearings.Count</h3>
+                    <p>Upcoming Hearings</p>
+                    <span class="stat-trend negative">
+                        <i class="fas fa-arrow-down"></i> @hearingsTrend%
+                    </span>
+                </div>
+            </div>
+
+            <div class="stat-card" style="--card-color: #e74a3b">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>@urgentTasksCount</h3>
+                    <p>Urgent Tasks</p>
+                    <span class="stat-trend positive">
+                        <i class="fas fa-arrow-up"></i> @urgentTasksTrend%
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="content-grid">
+            <!-- Case Status Chart -->
+            <div class="chart-card">
+                <div class="card-header">
+                    <h3>Case Status</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="caseStatusChart" @ref="chartCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Upcoming Hearings -->
+            <div class="hearings-card">
+                <div class="card-header">
+                    <h3>Upcoming Hearings</h3>
+                    <button class="btn btn-sm btn-primary" @onclick="ShowAllHearings">
+                        View All
+                    </button>
+                </div>
+                <div class="hearings-list">
+                    @foreach (var hearing in upcomingHearings.OrderBy(h => h.HearingDate).Take(3))
+                    {
+                        <div class="hearing-item">
+                            <div class="hearing-date">
+                                <span class="day">@hearing.HearingDate.ToString("dd")</span>
+                                <span class="month">@hearing.HearingDate.ToString("MMM")</span>
+                            </div>
+                            <div class="hearing-info">
+                                <h4>@(hearing.Case?.Title ?? "Untitled Case")</h4>
+                                <p>
+                                    <i class="fas fa-clock"></i> @hearing.HearingDate.ToString("h:mm tt") •
+                                    <i class="fas fa-map-marker-alt"></i> @hearing.Venue
+                                </p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="activity-card">
+                <div class="card-header">
+                    <h3>Recent Activity</h3>
+                </div>
+                <div class="activity-list">
+                    @foreach (var activity in recentActivities)
+                    {
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="@activity.Icon"></i>
+                            </div>
+                            <div class="activity-content">
+                                <p>@activity.Description</p>
+                                <small class="text-muted">@FormatDate(activity.Timestamp)</small>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Task Progress -->
+            <div class="tasks-card">
+                <div class="card-header">
+                    <h3>Task Progress</h3>
+                    @* <button class="btn btn-sm btn-primary" @onclick="AddNewTask"> *@
+                    @*     <i class="fas fa-plus"></i> Add Task *@
+                    @* </button> *@
+                </div>
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <span>@completedTasksCount/@totalTasksCount tasks completed</span>
+                        <span>@completionPercentage%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: @completionPercentage%"
+                             role="progressbar" aria-valuenow="@completionPercentage"
+                             aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <div class="task-list">
+                    @foreach (var task in recentTasks)
+                    {
+                        <div class="task-item @(task.Status == "Completed" ? "completed" : "")">
+                            <label class="task-checkbox">
+                                <input type="checkbox" checked="@(task.Status == "Completed")"
+                                       @onchange="@(() => ToggleTaskCompletion(task))" />
+                                <span class="checkmark"></span>
+                            </label>
+                            <div class="task-content">
+                                <h4>@task.Title</h4>
+                                <p>@(task.Description ?? "No description")</p>
+                                <div class="task-meta">
+                                    <span class="task-priority @GetPriorityClass(task)">
+                                        <i class="fas fa-exclamation-circle"></i> @GetPriorityText(task)
+                                    </span>
+                                    <span class="task-due">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        Due @(task.CompletedAt?.ToShortDateString() ?? "No due date")
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" @onclick="ShowQuickActions">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- Quick Actions Menu -->
+    @if (showQuickActions)
+    {
+        <div class="quick-actions-menu">
+            <button class="quick-action" @onclick="StartNewCase">
+                <i class="fas fa-file-alt"></i>
+                <span>New Case</span>
+            </button>
+            <button class="quick-action" @onclick="ScheduleHearing">
+                <i class="fas fa-calendar-plus"></i>
+                <span>Schedule Hearing</span>
+            </button>
+            <button class="quick-action" @onclick="CreateDocument">
+                <i class="fas fa-file-upload"></i>
+                <span>Upload Document</span>
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    // Refs
+    private ElementReference dashboardRef;
+    private ElementReference chartCanvas;
+    private IJSObjectReference? chartModule;
+    private IJSObjectReference? chartInstance;
+
+    // State
+    private bool isDarkMode = false;
+    private bool showQuickActions = false;
+    private Lawyer? lawyer;
+
+    // Data
+    private List<Case> cases = new();
+    private List<Hearing> upcomingHearings = new();
+    private List<CaseTask> recentTasks = new();
+    private List<Activity> recentActivities = new();
+
+    // Computed properties
+    private int activeCasesCount => cases.Count(c => c.Status == CaseStatus.Open);
+    private int completedTasksCount => recentTasks.Count(t => t.Status == "Completed");
+    private int totalTasksCount => recentTasks.Count;
+    private int urgentTasksCount => recentTasks.Count(t => IsTaskUrgent(t));
+    private int completionPercentage => totalTasksCount == 0 ? 0 : (int)Math.Round((double)completedTasksCount / totalTasksCount * 100);
+
+    // Sample trends
+    private int activeCasesTrend = 12;
+    private int completedTasksTrend = 8;
+    private int hearingsTrend = -3;
+    private int urgentTasksTrend = 5;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSampleData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            chartModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./js/chart.js");
+            await InitializeChart();
+
+            var prefersDark = await JSRuntime.InvokeAsync<bool>("matchMedia", "(prefers-color-scheme: dark)");
+            if (prefersDark) ToggleDarkMode();
+        }
+    }
+
+    private async Task InitializeChart()
+    {
+        if (chartModule != null)
+        {
+            var caseStatusData = new
+            {
+                Open = cases.Count(c => c.Status == CaseStatus.Open),
+                Closed = cases.Count(c => c.Status == CaseStatus.Closed),
+                Pending = cases.Count(c => c.Status == CaseStatus.Pending)
+            };
+
+            chartInstance = await chartModule.InvokeAsync<IJSObjectReference>(
+                "createCaseStatusChart",
+                chartCanvas,
+                caseStatusData);
+        }
+    }
+
+    private async Task LoadSampleData()
+    {
+        // Sample lawyer
+        lawyer = new Lawyer
+            {
+                LawyerId = 1,
+                UserId = 1,
+                FullName = "John Doe",
+                Specialization = "Corporate Law"
+            };
+
+        // Sample cases
+        cases = new List<Case>
+        {
+            new Case {
+                CaseId = 1,
+                Title = "Doe vs. Smith Contract Dispute",
+                Description = "Breach of contract case",
+                Status = CaseStatus.Open,
+                StartDate = DateTime.Now.AddMonths(-2),
+                ClientId = 1,
+                LawyerId = 1
+            },
+            new Case {
+                CaseId = 2,
+                Title = "Johnson Estate Planning",
+                Description = "Will and trust preparation",
+                Status = CaseStatus.Pending,
+                StartDate = DateTime.Now.AddMonths(-1),
+                ClientId = 2,
+                LawyerId = 1
+            },
+            new Case {
+                CaseId = 3,
+                Title = "State vs. Williams",
+                Description = "Criminal defense",
+                Status = CaseStatus.Open,
+                StartDate = DateTime.Now.AddMonths(-3),
+                ClientId = 3,
+                LawyerId = 1
+            },
+            new Case {
+                CaseId = 4,
+                Title = "Patel Divorce",
+                Description = "Divorce settlement",
+                Status = CaseStatus.Closed,
+                StartDate = DateTime.Now.AddMonths(-6),
+                EndDate = DateTime.Now.AddMonths(-1),
+                ClientId = 4,
+                LawyerId = 1
+            }
+        };
+
+        // Sample hearings
+        upcomingHearings = new List<Hearing>
+        {
+            new Hearing {
+                HearingId = 1,
+                CaseId = 1,
+                HearingDate = DateTime.Today.AddDays(1).AddHours(10),
+                Venue = "Courtroom 4B",
+                Case = cases[0]
+            },
+            new Hearing {
+                HearingId = 2,
+                CaseId = 2,
+                HearingDate = DateTime.Today.AddDays(3).AddHours(14),
+                Venue = "Judge's Chambers",
+                Case = cases[1]
+            }
+        };
+
+        // Sample tasks
+        recentTasks = new List<CaseTask>
+        {
+            new CaseTask {
+                TaskId = 1,
+                CaseId = 1,
+                Title = "Draft motion to dismiss",
+                Description = "Prepare motion papers",
+                Status = "Pending",
+                CreatedAt = DateTime.Now.AddDays(-3)
+            },
+            new CaseTask {
+                TaskId = 2,
+                CaseId = 2,
+                Title = "Review trust documents",
+                Description = "Client provided financials",
+                Status = "Completed",
+                CreatedAt = DateTime.Now.AddDays(-5),
+                CompletedAt = DateTime.Now.AddDays(-1)
+            }
+        };
+
+        // Sample activities
+        recentActivities = new List<Activity>
+        {
+            new Activity {
+                Description = "Filed motion in Doe vs. Smith",
+                Timestamp = DateTime.Now.AddHours(-1),
+                Icon = "fas fa-file-alt"
+            },
+            new Activity {
+                Description = "Completed trust document review",
+                Timestamp = DateTime.Now.AddDays(-1),
+                Icon = "fas fa-check-circle"
+            }
+        };
+    }
+
+    private string FormatDate(DateTime date)
+    {
+        var timeSince = DateTime.Now - date;
+        if (timeSince.TotalDays >= 1)
+            return $"{(int)timeSince.TotalDays}d ago";
+        if (timeSince.TotalHours >= 1)
+            return $"{(int)timeSince.TotalHours}h ago";
+        return $"{(int)timeSince.TotalMinutes}m ago";
+    }
+
+    private bool IsTaskUrgent(CaseTask task)
+    {
+        return task.Title.Contains("urgent", StringComparison.OrdinalIgnoreCase) ||
+               (task.CompletedAt.HasValue && task.CompletedAt.Value.Date == DateTime.Today);
+    }
+
+    private string GetPriorityClass(CaseTask task)
+    {
+        if (IsTaskUrgent(task)) return "urgent";
+        if (task.Title.Contains("review", StringComparison.OrdinalIgnoreCase)) return "high";
+        return "medium";
+    }
+
+    private string GetPriorityText(CaseTask task)
+    {
+        if (IsTaskUrgent(task)) return "Urgent";
+        if (task.Title.Contains("review", StringComparison.OrdinalIgnoreCase)) return "High";
+        return "Medium";
+    }
+
+    private void ToggleDarkMode()
+    {
+        isDarkMode = !isDarkMode;
+    }
+
+    private void ShowQuickActions()
+    {
+        showQuickActions = !showQuickActions;
+    }
+
+    private void StartNewCase()
+    {
+        showQuickActions = false;
+    }
+
+    private void ScheduleHearing()
+    {
+        showQuickActions = false;
+    }
+
+    private void CreateDocument()
+    {
+        showQuickActions = false;
+    }
+
+    private void ShowAllHearings()
+    {
+        // Would navigate to hearings page
+    }
+
+    private async Task ToggleTaskCompletion(CaseTask task)
+    {
+        task.Status = task.Status == "Completed" ? "Pending" : "Completed";
+        task.CompletedAt = task.Status == "Completed" ? DateTime.Now : null;
+
+        // In real app: await TaskService.UpdateTaskAsync(task);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        chartInstance?.DisposeAsync();
+        chartModule?.DisposeAsync();
+    }
+
+    public class Activity
+    {
+        public string Description { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+        public string Icon { get; set; } = string.Empty;
+    }
+}
