@@ -31,35 +31,20 @@
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
                     <div class="card green">
-<<<<<<< HEAD
-                        <div class="title">Pending cases</div>
-                        <div class="value">@(cases?.Count(c => c?.Status == CaseStatus.Pending) ?? 0)</div>
-=======
                         <div class="title">Open Cases</div>
                         <div class="value">@cases.Count(c => c.Status == CaseStatus.Open)</div>
->>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
                     <div class="card orange">
-<<<<<<< HEAD
-                        <div class="title">Completed Cases</div>
-                        <div class="value">@(cases?.Count(c => c?.Status == CaseStatus.Completed) ?? 0)</div>
-=======
                         <div class="title">Pending Cases</div>
                         <div class="value">@cases.Count(c => c.Status == CaseStatus.Pending)</div>
->>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                     </div>
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 col-xl-3 mb-4">
                     <div class="card red">
-<<<<<<< HEAD
-                        <div class="title">Active Cases</div>
-                        <div class="value">@(cases?.Count(c => c?.Status == CaseStatus.Active) ?? 0)</div>
-=======
                         <div class="title">Closed Cases</div>
                         <div class="value">@cases.Count(c => c.Status == CaseStatus.Closed)</div>
->>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                     </div>
                 </div>
             </div>
@@ -121,18 +106,6 @@
                                         @{
                                             var statusClass = caseItem.Status switch
                                             {
-<<<<<<< HEAD
-                                                statusClass = caseItem.Status switch
-                                                {
-                                                    CaseStatus.Pending => "status-red",
-                                                    CaseStatus.InProgress => "status-orange",
-                                                    CaseStatus.Completed => "status-green",
-                                                    _ => "status-blue"
-                                                };
-                                            }
-                                        }
-                                        <span class="status-text @statusClass">@(caseItem?.Status.ToString() ?? "Unknown")</span>
-=======
                                                 CaseStatus.Pending => "status-red",
                                                 CaseStatus.Open => "status-orange",
                                                 CaseStatus.Closed => "status-green",
@@ -140,7 +113,6 @@
                                             };
                                         }
                                         <span class="status-text @statusClass">@caseItem.Status</span>
->>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                                     </td>
                                     <td>
                                         <p>@caseItem.StartDate.ToString("dd-MM-yyyy")</p>
@@ -165,17 +137,10 @@
                     <div class="chart radar-chart dark">
                         <h3 class="title">Pending Cases</h3>
                         <p class="tagline">Current Year</p>
-<<<<<<< HEAD
-                        @if (cases?.Any(c => c?.Status == CaseStatus.Pending) == true)
-                        {
-                            <div class="case-list">
-                                @foreach (var caseItem in cases.Where(c => c?.Status == CaseStatus.Pending).Take(5))
-=======
                         @if (cases.Any(c => c.Status == CaseStatus.Pending))
                         {
                             <div class="case-list">
                                 @foreach (var caseItem in cases.Where(c => c.Status == CaseStatus.Pending).Take(5))
->>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                                 {
                                     var client = clients.FirstOrDefault(c => c.ClientId == caseItem.ClientId);
                                     <div class="case-item">
@@ -195,17 +160,10 @@
                     <div class="chart bar-chart light">
                         <h3 class="title">Closed Cases</h3>
                         <p class="tagline">Distribution</p>
-<<<<<<< HEAD
-                        @if (cases?.Any(c => c?.Status == CaseStatus.Completed) == true)
-                        {
-                            <div class="case-list">
-                                @foreach (var caseItem in cases.Where(c => c?.Status == CaseStatus.Completed).Take(5))
-=======
                         @if (cases.Any(c => c.Status == CaseStatus.Closed))
                         {
                             <div class="case-list">
                                 @foreach (var caseItem in cases.Where(c => c.Status == CaseStatus.Closed).Take(5))
->>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
                                 {
                                     var client = clients.FirstOrDefault(c => c.ClientId == caseItem.ClientId);
                                     <div class="case-item">
@@ -272,22 +230,16 @@
 
         try
         {
-<<<<<<< HEAD
             // Initialize with empty lists to prevent null reference exceptions
             cases = new List<Case>();
             clients = new List<Client>();
             lawyers = new List<Lawyer>();
             caseHearings = new List<Hearing>();
 
-            var casesTask = SafeGetFromJsonAsync<List<Case>>("/api/Cases");
-            var clientsTask = SafeGetFromJsonAsync<List<Client>>("/api/Clients");
-            var lawyersTask = SafeGetFromJsonAsync<List<Lawyer>>("/api/Lawyers");
-=======
             // Fetch cases, clients, and lawyers in parallel
             var casesTask = Http.GetFromJsonAsync<List<Case>>("/api/Cases", jsonOptions);
             var clientsTask = Http.GetFromJsonAsync<List<Client>>("/api/Clients", jsonOptions);
             var lawyersTask = Http.GetFromJsonAsync<List<Lawyer>>("/api/Lawyers", jsonOptions);
->>>>>>> bff96e2785d853b5d56cfae98c8fb8607b07d282
 
             await Task.WhenAll(casesTask, clientsTask, lawyersTask);
 

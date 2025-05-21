@@ -77,11 +77,7 @@
                     <i class="fas fa-clock"></i>
                 </div>
                 <div class="stat-info">
-                    <h3>@urgentTasksCount</h3>
-                    <p>Urgent Tasks</p>
-                    <span class="stat-trend positive">
-                        <i class="fas fa-arrow-up"></i> @urgentTasksTrend%
-                    </span>
+                   
                 </div>
             </div>
         </div>
@@ -151,9 +147,6 @@
             <div class="tasks-card">
                 <div class="card-header">
                     <h3>Task Progress</h3>
-                    @* <button class="btn btn-sm btn-primary" @onclick="AddNewTask"> *@
-                    @*     <i class="fas fa-plus"></i> Add Task *@
-                    @* </button> *@
                 </div>
                 <div class="progress-container">
                     <div class="progress-info">
@@ -178,15 +171,7 @@
                             <div class="task-content">
                                 <h4>@task.Title</h4>
                                 <p>@(task.Description ?? "No description")</p>
-                                <div class="task-meta">
-                                    <span class="task-priority @GetPriorityClass(task)">
-                                        <i class="fas fa-exclamation-circle"></i> @GetPriorityText(task)
-                                    </span>
-                                    <span class="task-due">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        Due @(task.CompletedAt?.ToShortDateString() ?? "No due date")
-                                    </span>
-                                </div>
+                              
                             </div>
                         </div>
                     }
@@ -242,7 +227,6 @@
     private int activeCasesCount => cases.Count(c => c.Status == CaseStatus.Open);
     private int completedTasksCount => recentTasks.Count(t => t.Status == "Completed");
     private int totalTasksCount => recentTasks.Count;
-    private int urgentTasksCount => recentTasks.Count(t => IsTaskUrgent(t));
     private int completionPercentage => totalTasksCount == 0 ? 0 : (int)Math.Round((double)completedTasksCount / totalTasksCount * 100);
 
     // Sample trends
@@ -368,16 +352,24 @@
                 Title = "Draft motion to dismiss",
                 Description = "Prepare motion papers",
                 Status = "Pending",
-                CreatedAt = DateTime.Now.AddDays(-3)
+                CreatedAt = DateTime.Now.AddDays(-3),
             },
             new CaseTask {
                 TaskId = 2,
                 CaseId = 2,
-                Title = "Review trust documents",
+                Title = "Review trust documents (Urgent)",
                 Description = "Client provided financials",
                 Status = "Completed",
                 CreatedAt = DateTime.Now.AddDays(-5),
-                CompletedAt = DateTime.Now.AddDays(-1)
+                CompletedAt = DateTime.Now.AddDays(-1),
+            },
+            new CaseTask {
+                TaskId = 3,
+                CaseId = 3,
+                Title = "Prepare witness list",
+                Description = "Compile all witness statements",
+                Status = "Pending",
+                CreatedAt = DateTime.Now.AddDays(-1),
             }
         };
 
@@ -393,6 +385,11 @@
                 Description = "Completed trust document review",
                 Timestamp = DateTime.Now.AddDays(-1),
                 Icon = "fas fa-check-circle"
+            },
+            new Activity {
+                Description = "Meeting with client Williams",
+                Timestamp = DateTime.Now.AddDays(-2),
+                Icon = "fas fa-user"
             }
         };
     }
@@ -405,26 +402,6 @@
         if (timeSince.TotalHours >= 1)
             return $"{(int)timeSince.TotalHours}h ago";
         return $"{(int)timeSince.TotalMinutes}m ago";
-    }
-
-    private bool IsTaskUrgent(CaseTask task)
-    {
-        return task.Title.Contains("urgent", StringComparison.OrdinalIgnoreCase) ||
-               (task.CompletedAt.HasValue && task.CompletedAt.Value.Date == DateTime.Today);
-    }
-
-    private string GetPriorityClass(CaseTask task)
-    {
-        if (IsTaskUrgent(task)) return "urgent";
-        if (task.Title.Contains("review", StringComparison.OrdinalIgnoreCase)) return "high";
-        return "medium";
-    }
-
-    private string GetPriorityText(CaseTask task)
-    {
-        if (IsTaskUrgent(task)) return "Urgent";
-        if (task.Title.Contains("review", StringComparison.OrdinalIgnoreCase)) return "High";
-        return "Medium";
     }
 
     private void ToggleDarkMode()
@@ -440,27 +417,31 @@
     private void StartNewCase()
     {
         showQuickActions = false;
+        // NavigationManager.NavigateTo("/cases/new"); in real implementation
     }
 
     private void ScheduleHearing()
     {
         showQuickActions = false;
+        // NavigationManager.NavigateTo("/hearings/new"); in real implementation
     }
 
     private void CreateDocument()
     {
         showQuickActions = false;
+        // NavigationManager.NavigateTo("/documents/upload"); in real implementation
     }
 
     private void ShowAllHearings()
     {
-        // Would navigate to hearings page
+        // NavigationManager.NavigateTo("/hearings"); in real implementation
     }
 
     private async Task ToggleTaskCompletion(CaseTask task)
     {
         task.Status = task.Status == "Completed" ? "Pending" : "Completed";
-        task.CompletedAt = task.Status == "Completed" ? DateTime.Now : null;
+        task.CompletedAt = task.Status == "Completed" ?DateTime.Now:null;
+        ;
 
         // In real app: await TaskService.UpdateTaskAsync(task);
         StateHasChanged();
