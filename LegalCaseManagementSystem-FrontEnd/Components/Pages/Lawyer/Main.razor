@@ -1,12 +1,17 @@
 ﻿@page "/lawyer"
 @using LegalCaseManagementSystem_FrontEnd.Models
 @using System.ComponentModel.DataAnnotations
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IHttpClientFactory HttpClientFactory
 @inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 @implements IDisposable
 
 <!-- Dashboard Container -->
 <div class="dashboard @(isDarkMode ? "dark-mode" : "")" @ref="dashboardRef">
-
     <!-- Header -->
     <header class="dashboard-header">
         <div class="header-left">
@@ -18,7 +23,7 @@
                 <i class="fas @(isDarkMode ? "fa-sun" : "fa-moon")"></i>
             </button>
             <div class="user-dropdown">
-                <img src="https://ui-avatars.com/api/?name=@(lawyer?.FullName ?? "Lawyer")&background=4e73df&color=fff"
+                <img src="https://ui-avatars.com/api/?name=@(lawyerName ?? "Lawyer")&background=4e73df&color=fff"
                      class="user-avatar" />
                 <div class="dropdown-content">
                     <a href="#"><i class="fas fa-user"></i> Profile</a>
@@ -77,7 +82,11 @@
                     <i class="fas fa-clock"></i>
                 </div>
                 <div class="stat-info">
-                   
+                    <h3>@pendingTasksCount</h3>
+                    <p>Pending Tasks</p>
+                    <span class="stat-trend positive">
+                        <i class="fas fa-arrow-up"></i> @pendingTasksTrend%
+                    </span>
                 </div>
             </div>
         </div>
@@ -94,6 +103,55 @@
                 </div>
             </div>
 
+            <!-- Open Cases -->
+            <div class="open-cases-card">
+                <div class="card-header">
+                    <h3>Open Cases</h3>
+                </div>
+                <div class="cases-list">
+                    @if (isLoading)
+                    {
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (errorMessage != null)
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+                    else
+                    {
+                        var openCases = cases.Where(c => c.Status == CaseStatus.Open && (c.LawyerId == 0 || c.LawyerId == null)).ToList();
+                        if (openCases.Any())
+                        {
+                            @foreach (var caseItem in openCases.OrderBy(c => c.StartDate).Take(5))
+                            {
+                                <div class="case-item">
+                                    <div class="case-info">
+                                        <h4>@caseItem.Title</h4>
+                                        <p>
+                                            <i class="fas fa-user"></i> @(caseItem.Client?.FullName ?? "Unknown Client") •
+                                            <i class="fas fa-calendar"></i> @caseItem.StartDate.ToString("MMM dd, yyyy")
+                                        </p>
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" @onclick="() => TakeCase(caseItem.CaseId)">
+                                        Take Case
+                                    </button>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted text-center py-3">No open cases available.</p>
+                        }
+                    }
+                </div>
+            </div>
+
             <!-- Upcoming Hearings -->
             <div class="hearings-card">
                 <div class="card-header">
@@ -103,21 +161,38 @@
                     </button>
                 </div>
                 <div class="hearings-list">
-                    @foreach (var hearing in upcomingHearings.OrderBy(h => h.HearingDate).Take(3))
+                    @if (isLoading)
                     {
-                        <div class="hearing-item">
-                            <div class="hearing-date">
-                                <span class="day">@hearing.HearingDate.ToString("dd")</span>
-                                <span class="month">@hearing.HearingDate.ToString("MMM")</span>
-                            </div>
-                            <div class="hearing-info">
-                                <h4>@(hearing.Case?.Title ?? "Untitled Case")</h4>
-                                <p>
-                                    <i class="fas fa-clock"></i> @hearing.HearingDate.ToString("h:mm tt") •
-                                    <i class="fas fa-map-marker-alt"></i> @hearing.Venue
-                                </p>
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
                         </div>
+                    }
+                    else if (errorMessage != null)
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var hearing in upcomingHearings.OrderBy(h => h.HearingDate).Take(3))
+                        {
+                            <div class="hearing-item">
+                                <div class="hearing-date">
+                                    <span class="day">@hearing.HearingDate.ToString("dd")</span>
+                                    <span class="month">@hearing.HearingDate.ToString("MMM")</span>
+                                </div>
+                                <div class="hearing-info">
+                                    <h4>@(hearing.Case?.Title ?? "Untitled Case")</h4>
+                                    <p>
+                                        <i class="fas fa-clock"></i> @hearing.HearingDate.ToString("h:mm tt") •
+                                        <i class="fas fa-map-marker-alt"></i> @hearing.Venue
+                                    </p>
+                                </div>
+                            </div>
+                        }
                     }
                 </div>
             </div>
@@ -128,17 +203,34 @@
                     <h3>Recent Activity</h3>
                 </div>
                 <div class="activity-list">
-                    @foreach (var activity in recentActivities)
+                    @if (isLoading)
                     {
-                        <div class="activity-item">
-                            <div class="activity-icon">
-                                <i class="@activity.Icon"></i>
-                            </div>
-                            <div class="activity-content">
-                                <p>@activity.Description</p>
-                                <small class="text-muted">@FormatDate(activity.Timestamp)</small>
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
                         </div>
+                    }
+                    else if (errorMessage != null)
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var activity in recentActivities)
+                        {
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="@activity.Icon"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p>@activity.Description</p>
+                                    <small class="text-muted">@FormatDate(activity.Timestamp)</small>
+                                </div>
+                            </div>
+                        }
                     }
                 </div>
             </div>
@@ -160,49 +252,41 @@
                     </div>
                 </div>
                 <div class="task-list">
-                    @foreach (var task in recentTasks)
+                    @if (isLoading)
                     {
-                        <div class="task-item @(task.Status == "Completed" ? "completed" : "")">
-                            <label class="task-checkbox">
-                                <input type="checkbox" checked="@(task.Status == "Completed")"
-                                       @onchange="@(() => ToggleTaskCompletion(task))" />
-                                <span class="checkmark"></span>
-                            </label>
-                            <div class="task-content">
-                                <h4>@task.Title</h4>
-                                <p>@(task.Description ?? "No description")</p>
-                              
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
                         </div>
+                    }
+                    else if (errorMessage != null)
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var task in recentTasks)
+                        {
+                            <div class="task-item @(task.Status == "Completed" ? "completed" : "")">
+                                <label class="task-checkbox">
+                                    <input type="checkbox" checked="@(task.Status == "Completed")"
+                                           @onchange="@(() => ToggleTaskCompletion(task))" />
+                                    <span class="checkmark"></span>
+                                </label>
+                                <div class="task-content">
+                                    <h4>@task.Title</h4>
+                                    <p>@(task.Description ?? "No description")</p>
+                                </div>
+                            </div>
+                        }
                     }
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Floating Action Button -->
-    <button class="fab" @onclick="ShowQuickActions">
-        <i class="fas fa-plus"></i>
-    </button>
-
-    <!-- Quick Actions Menu -->
-    @if (showQuickActions)
-    {
-        <div class="quick-actions-menu">
-            <button class="quick-action" @onclick="StartNewCase">
-                <i class="fas fa-file-alt"></i>
-                <span>New Case</span>
-            </button>
-            <button class="quick-action" @onclick="ScheduleHearing">
-                <i class="fas fa-calendar-plus"></i>
-                <span>Schedule Hearing</span>
-            </button>
-            <button class="quick-action" @onclick="CreateDocument">
-                <i class="fas fa-file-upload"></i>
-                <span>Upload Document</span>
-            </button>
-        </div>
-    }
 </div>
 
 @code {
@@ -214,8 +298,10 @@
 
     // State
     private bool isDarkMode = false;
-    private bool showQuickActions = false;
-    private Lawyer? lawyer;
+    private bool isLoading = false;
+    private string? errorMessage;
+    private string? lawyerName;
+    private int? lawyerId;
 
     // Data
     private List<Case> cases = new();
@@ -224,32 +310,154 @@
     private List<Activity> recentActivities = new();
 
     // Computed properties
-    private int activeCasesCount => cases.Count(c => c.Status == CaseStatus.Open);
+    private int activeCasesCount => cases.Count(c => c.Status == CaseStatus.Open || c.Status == CaseStatus.Active || c.Status == CaseStatus.InProgress);
     private int completedTasksCount => recentTasks.Count(t => t.Status == "Completed");
+    private int pendingTasksCount => recentTasks.Count(t => t.Status == "Pending");
     private int totalTasksCount => recentTasks.Count;
     private int completionPercentage => totalTasksCount == 0 ? 0 : (int)Math.Round((double)completedTasksCount / totalTasksCount * 100);
 
-    // Sample trends
+    // Trends (placeholder, could be calculated from historical data if available)
     private int activeCasesTrend = 12;
     private int completedTasksTrend = 8;
-    private int hearingsTrend = -3;
-    private int urgentTasksTrend = 5;
+    private int hearingsTrend = 3;
+    private int pendingTasksTrend = 5;
+
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+
+    private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadSampleData();
+        await LoadData();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            chartModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
-                "import", "./js/chart.js");
+            chartModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/chart.js");
             await InitializeChart();
 
             var prefersDark = await JSRuntime.InvokeAsync<bool>("matchMedia", "(prefers-color-scheme: dark)");
             if (prefersDark) ToggleDarkMode();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Fetch lawyer name and ID from authentication state
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            lawyerName = authState.User.Identity?.Name ?? "Lawyer";
+            var lawyerIdClaim = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            lawyerId = int.TryParse(lawyerIdClaim, out var id) ? id : null;
+
+            // Fetch cases
+            var casesResponse = await Http.GetAsync("/api/Cases");
+            if (!casesResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
+                return;
+            }
+            var casesContent = await casesResponse.Content.ReadAsStringAsync();
+            cases = JsonSerializer.Deserialize<List<Case>>(casesContent, jsonOptions) ?? new();
+
+            // Fetch hearings and tasks for all cases
+            upcomingHearings = new();
+            recentTasks = new();
+            recentActivities = new();
+            foreach (var caseItem in cases)
+            {
+                // Fetch hearings
+                var hearingsResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Hearings");
+                if (hearingsResponse.IsSuccessStatusCode)
+                {
+                    var hearingsContent = await hearingsResponse.Content.ReadAsStringAsync();
+                    var hearings = JsonSerializer.Deserialize<List<Hearing>>(hearingsContent, jsonOptions) ?? new();
+                    foreach (var hearing in hearings)
+                    {
+                        hearing.Case = caseItem; // Link hearing to case
+                        if (hearing.HearingDate >= DateTime.Now)
+                        {
+                            upcomingHearings.Add(hearing);
+                            recentActivities.Add(new Activity
+                                {
+                                    Description = $"Scheduled hearing for {caseItem.Title}",
+                                    Timestamp = hearing.HearingDate,
+                                    Icon = "fas fa-calendar-alt"
+                                });
+                        }
+                    }
+                }
+
+                // Fetch tasks
+                var tasksResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/CaseTasks");
+                if (tasksResponse.IsSuccessStatusCode)
+                {
+                    var tasksContent = await tasksResponse.Content.ReadAsStringAsync();
+                    var tasks = JsonSerializer.Deserialize<List<CaseTask>>(tasksContent, jsonOptions) ?? new();
+                    foreach (var task in tasks)
+                    {
+                        recentTasks.Add(task);
+                        if (task.CompletedAt.HasValue)
+                        {
+                            recentActivities.Add(new Activity
+                                {
+                                    Description = $"Completed task '{task.Title}' in {caseItem.Title}",
+                                    Timestamp = task.CompletedAt.Value,
+                                    Icon = "fas fa-check-circle"
+                                });
+                        }
+                        else
+                        {
+                            recentActivities.Add(new Activity
+                                {
+                                    Description = $"Assigned task '{task.Title}' in {caseItem.Title}",
+                                    Timestamp = task.CreatedAt,
+                                    Icon = "fas fa-file-alt"
+                                });
+                        }
+                    }
+                }
+
+                // Fetch documents (for activities)
+                var docsResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Documents");
+                if (docsResponse.IsSuccessStatusCode)
+                {
+                    var docsContent = await docsResponse.Content.ReadAsStringAsync();
+                    var documents = JsonSerializer.Deserialize<List<Document>>(docsContent, jsonOptions) ?? new();
+                    foreach (var doc in documents)
+                    {
+                        recentActivities.Add(new Activity
+                            {
+                                Description = $"Uploaded document '{doc.Title}' for {caseItem.Title}",
+                                Timestamp = doc.UploadedAt,
+                                Icon = "fas fa-file-upload"
+                            });
+                    }
+                }
+            }
+
+            // Sort and limit activities
+            recentActivities = recentActivities.OrderByDescending(a => a.Timestamp).Take(5).ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            await InitializeChart();
+            StateHasChanged();
         }
     }
 
@@ -261,7 +469,10 @@
             {
                 Open = cases.Count(c => c.Status == CaseStatus.Open),
                 Closed = cases.Count(c => c.Status == CaseStatus.Closed),
-                Pending = cases.Count(c => c.Status == CaseStatus.Pending)
+                Pending = cases.Count(c => c.Status == CaseStatus.Pending),
+                Active = cases.Count(c => c.Status == CaseStatus.Active),
+                InProgress = cases.Count(c => c.Status == CaseStatus.InProgress),
+                Completed = cases.Count(c => c.Status == CaseStatus.Completed)
             };
 
             chartInstance = await chartModule.InvokeAsync<IJSObjectReference>(
@@ -269,129 +480,6 @@
                 chartCanvas,
                 caseStatusData);
         }
-    }
-
-    private async Task LoadSampleData()
-    {
-        // Sample lawyer
-        lawyer = new Lawyer
-            {
-                LawyerId = 1,
-                UserId = 1,
-                FullName = "John Doe",
-                Specialization = "Corporate Law"
-            };
-
-        // Sample cases
-        cases = new List<Case>
-        {
-            new Case {
-                CaseId = 1,
-                Title = "Doe vs. Smith Contract Dispute",
-                Description = "Breach of contract case",
-                Status = CaseStatus.Open,
-                StartDate = DateTime.Now.AddMonths(-2),
-                ClientId = 1,
-                LawyerId = 1
-            },
-            new Case {
-                CaseId = 2,
-                Title = "Johnson Estate Planning",
-                Description = "Will and trust preparation",
-                Status = CaseStatus.Pending,
-                StartDate = DateTime.Now.AddMonths(-1),
-                ClientId = 2,
-                LawyerId = 1
-            },
-            new Case {
-                CaseId = 3,
-                Title = "State vs. Williams",
-                Description = "Criminal defense",
-                Status = CaseStatus.Open,
-                StartDate = DateTime.Now.AddMonths(-3),
-                ClientId = 3,
-                LawyerId = 1
-            },
-            new Case {
-                CaseId = 4,
-                Title = "Patel Divorce",
-                Description = "Divorce settlement",
-                Status = CaseStatus.Closed,
-                StartDate = DateTime.Now.AddMonths(-6),
-                EndDate = DateTime.Now.AddMonths(-1),
-                ClientId = 4,
-                LawyerId = 1
-            }
-        };
-
-        // Sample hearings
-        upcomingHearings = new List<Hearing>
-        {
-            new Hearing {
-                HearingId = 1,
-                CaseId = 1,
-                HearingDate = DateTime.Today.AddDays(1).AddHours(10),
-                Venue = "Courtroom 4B",
-                Case = cases[0]
-            },
-            new Hearing {
-                HearingId = 2,
-                CaseId = 2,
-                HearingDate = DateTime.Today.AddDays(3).AddHours(14),
-                Venue = "Judge's Chambers",
-                Case = cases[1]
-            }
-        };
-
-        // Sample tasks
-        recentTasks = new List<CaseTask>
-        {
-            new CaseTask {
-                TaskId = 1,
-                CaseId = 1,
-                Title = "Draft motion to dismiss",
-                Description = "Prepare motion papers",
-                Status = "Pending",
-                CreatedAt = DateTime.Now.AddDays(-3),
-            },
-            new CaseTask {
-                TaskId = 2,
-                CaseId = 2,
-                Title = "Review trust documents (Urgent)",
-                Description = "Client provided financials",
-                Status = "Completed",
-                CreatedAt = DateTime.Now.AddDays(-5),
-                CompletedAt = DateTime.Now.AddDays(-1),
-            },
-            new CaseTask {
-                TaskId = 3,
-                CaseId = 3,
-                Title = "Prepare witness list",
-                Description = "Compile all witness statements",
-                Status = "Pending",
-                CreatedAt = DateTime.Now.AddDays(-1),
-            }
-        };
-
-        // Sample activities
-        recentActivities = new List<Activity>
-        {
-            new Activity {
-                Description = "Filed motion in Doe vs. Smith",
-                Timestamp = DateTime.Now.AddHours(-1),
-                Icon = "fas fa-file-alt"
-            },
-            new Activity {
-                Description = "Completed trust document review",
-                Timestamp = DateTime.Now.AddDays(-1),
-                Icon = "fas fa-check-circle"
-            },
-            new Activity {
-                Description = "Meeting with client Williams",
-                Timestamp = DateTime.Now.AddDays(-2),
-                Icon = "fas fa-user"
-            }
-        };
     }
 
     private string FormatDate(DateTime date)
@@ -407,44 +495,99 @@
     private void ToggleDarkMode()
     {
         isDarkMode = !isDarkMode;
-    }
-
-    private void ShowQuickActions()
-    {
-        showQuickActions = !showQuickActions;
-    }
-
-    private void StartNewCase()
-    {
-        showQuickActions = false;
-        // NavigationManager.NavigateTo("/cases/new"); in real implementation
-    }
-
-    private void ScheduleHearing()
-    {
-        showQuickActions = false;
-        // NavigationManager.NavigateTo("/hearings/new"); in real implementation
-    }
-
-    private void CreateDocument()
-    {
-        showQuickActions = false;
-        // NavigationManager.NavigateTo("/documents/upload"); in real implementation
+        StateHasChanged();
     }
 
     private void ShowAllHearings()
     {
-        // NavigationManager.NavigateTo("/hearings"); in real implementation
+        Navigation.NavigateTo("/cases");
+    }
+
+    private async Task TakeCase(int caseId)
+    {
+        if (!lawyerId.HasValue)
+        {
+            errorMessage = "Error: Lawyer ID not found. Please log in again.";
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var request = new { LawyerId = lawyerId.Value };
+            var response = await Http.PostAsJsonAsync($"/api/Cases/{caseId}/Assign", request);
+            if (response.IsSuccessStatusCode)
+            {
+                // Update local cases list: remove the case from open cases or update its LawyerId
+                var caseItem = cases.FirstOrDefault(c => c.CaseId == caseId);
+                if (caseItem != null)
+                {
+                    caseItem.LawyerId = lawyerId.Value;
+                    caseItem.Status = CaseStatus.Active; // Assume assignment changes status to Active
+                }
+
+                // Add to recent activities
+                recentActivities.Insert(0, new Activity
+                    {
+                        Description = $"Assigned case '{caseItem?.Title ?? "Case"}' to {lawyerName}",
+                        Timestamp = DateTime.Now,
+                        Icon = "fas fa-gavel"
+                    });
+                recentActivities = recentActivities.Take(5).ToList();
+
+                await InitializeChart(); // Update chart to reflect new status
+                StateHasChanged();
+            }
+            else
+            {
+                errorMessage = $"Error assigning case: {await response.Content.ReadAsStringAsync()}";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception assigning case: {ex.Message}";
+            StateHasChanged();
+        }
     }
 
     private async Task ToggleTaskCompletion(CaseTask task)
     {
-        task.Status = task.Status == "Completed" ? "Pending" : "Completed";
-        task.CompletedAt = task.Status == "Completed" ?DateTime.Now:null;
-        ;
-
-        // In real app: await TaskService.UpdateTaskAsync(task);
-        StateHasChanged();
+        try
+        {
+            var updatedTask = new
+            {
+                Title = task.Title,
+                Description = task.Description,
+                Status = task.Status == "Completed" ? "Pending" : "Completed"
+            };
+            var response = await Http.PutAsJsonAsync($"/api/cases/{task.CaseId}/CaseTasks/{task.TaskId}", updatedTask);
+            if (response.IsSuccessStatusCode)
+            {
+                task.Status = updatedTask.Status;
+                task.CompletedAt = task.Status == "Completed" ? DateTime.Now : null;
+                recentActivities.Insert(0, new Activity
+                    {
+                        Description = $"{(task.Status == "Completed" ? "Completed" : "Reopened")} task '{task.Title}'",
+                        Timestamp = DateTime.Now,
+                        Icon = task.Status == "Completed" ? "fas fa-check-circle" : "fas fa-file-alt"
+                    });
+                recentActivities = recentActivities.Take(5).ToList();
+                await InitializeChart();
+            }
+            else
+            {
+                errorMessage = $"Error updating task: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception updating task: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
     }
 
     public void Dispose()
