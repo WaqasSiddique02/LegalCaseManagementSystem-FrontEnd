@@ -20,8 +20,8 @@ body {
 .client-management-container {
     max-width: 1200px;
     margin-top: 5rem;
-    margin-left:17rem;
-    margin-right:3rem;
+    margin-left: 17rem;
+    margin-right: 3rem;
     padding: 1.5rem;
     background-color: var(--secondary-bg);
     border-radius: 10px;
@@ -223,4 +223,102 @@ body {
 
 .modal-backdrop {
     background-color: rgba(0, 0, 0, 0.7);
+}
+
+@media (max-width: 768px) {
+    .client-management-container {
+        max-width: 100%;
+        margin-left: 1rem;
+        margin-right: 1rem;
+        padding: 1rem;
+        margin-top: 3rem;
+    }
+
+        .client-management-container h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+    .management-actions .input-group {
+        max-width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .management-actions .col-md-6 {
+        width: 100%;
+    }
+
+    .table-dark th,
+    .table-dark td {
+        padding: 0.75rem;
+        font-size: 0.9rem; 
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.3em 0.6em;
+    }
+
+    .modal-content {
+        margin: 1rem;
+        padding: 0.5rem;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 1rem;
+    }
+
+    .modal-title {
+        font-size: 1.1rem;
+    }
+
+    .form-control,
+    .form-select {
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .client-management-container {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+        padding: 0.75rem;
+    }
+
+        .client-management-container h3 {
+            font-size: 1.25rem;
+        }
+
+    .table-dark th,
+    .table-dark td {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+    }
+
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.25em 0.5em;
+    }
+
+    .form-control,
+    .form-select {
+        font-size: 0.85rem;
+    }
+
+    .btn {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
 }

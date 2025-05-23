@@ -2,7 +2,7 @@
 main {
     padding: 20px;
     margin-left:18%;
-    margin-right:5%
+    width:80% !important;
 }
 
 /* Card Styles */
