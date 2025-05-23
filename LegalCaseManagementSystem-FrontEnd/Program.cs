@@ -1,5 +1,6 @@
 using LegalCaseManagementSystem_FrontEnd.Configuration;
 using LegalCaseManagementSystem_FrontEnd.Components;
+using LegalCaseManagementSystem_FrontEnd.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,8 @@ builder.Services.AddHttpClient("ApiClient", client =>
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
+
+builder.Services.AddScoped<DashboardState>();
 
 var app = builder.Build();
 

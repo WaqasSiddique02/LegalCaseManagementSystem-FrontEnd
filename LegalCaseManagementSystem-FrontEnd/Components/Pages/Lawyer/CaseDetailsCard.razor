@@ -1,0 +1,142 @@
+﻿@using LegalCaseManagementSystem_FrontEnd.Models
+@using LegalCaseManagementSystem_FrontEnd.Services
+@inject DashboardState DashboardState
+@inject NavigationManager Navigation
+
+<div class="case-card" role="region" aria-labelledby="case-@CaseItem.CaseId-title">
+    <div class="case-header">
+        <h3 id="case-@CaseItem.CaseId-title"
+            @onclick="() => NavigateToCase(CaseItem.CaseId)"
+            style="cursor: pointer;"
+            title="View case details">
+            @CaseItem.Title
+        </h3>
+        <span class="case-status @GetStatusClass(CaseItem.Status)" aria-label="Case status: @CaseItem.Status.ToString()">
+            @CaseItem.Status.ToString()
+        </span>
+    </div>
+
+    <div class="case-body">
+        <div class="case-description">
+            <p>@(CaseItem.Description ?? "No description available")</p>
+        </div>
+
+        <div class="case-details">
+            <div class="detail-row">
+                <span class="detail-label">Case ID:</span>
+                <span class="detail-value">@CaseItem.CaseId</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Start Date:</span>
+                <span class="detail-value">@CaseItem.StartDate.ToString("dd MMM yyyy")</span>
+            </div>
+            @if (CaseItem.EndDate.HasValue)
+            {
+                <div class="detail-row">
+                    <span class="detail-label">End Date:</span>
+                    <span class="detail-value">@CaseItem.EndDate.Value.ToString("dd MMM yyyy")</span>
+                </div>
+            }
+            <div class="detail-row">
+                <span class="detail-label">Client:</span>
+                <span class="detail-value">@(CaseItem.Client?.FullName ?? "Not assigned")</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Lawyer:</span>
+                <span class="detail-value">@(CaseItem.Lawyer?.FullName ?? "Not assigned")</span>
+            </div>
+        </div>
+
+        <div class="case-progress">
+            <div class="progress-info">
+                <span>@CompletedTasksCount/@(CaseItem.CaseTasks?.Count ?? 0) tasks completed</span>
+                <span>@TaskCompletionPercentage%</span>
+            </div>
+            <div class="progress">
+                <div class="progress-bar"
+                     style="width: @TaskCompletionPercentage%"
+                     role="progressbar"
+                     aria-valuenow="@TaskCompletionPercentage"
+                     aria-valuemin="0"
+                     aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="case-footer">
+        <div class="case-metrics">
+            <div class="metric">
+                <i class="fas fa-tasks" aria-hidden="true"></i>
+                <span>@(CaseItem.CaseTasks?.Count ?? 0) Tasks</span>
+            </div>
+            <div class="metric">
+                <i class="fas fa-file-alt" aria-hidden="true"></i>
+                <span>@(CaseItem.Documents?.Count ?? 0) Documents</span>
+            </div>
+            <div class="metric">
+                <i class="fas fa-gavel" aria-hidden="true"></i>
+                <span>@(CaseItem.Hearings?.Count ?? 0) Hearings</span>
+            </div>
+        </div>
+
+        @if (DashboardState.LawyerId.HasValue && CaseItem.LawyerId == 0)
+        {
+            <button class="btn btn-primary"
+                    disabled="@isTakingCase"
+                    @onclick="() => TakeCase(CaseItem.CaseId)"
+                    aria-label="Assign case to lawyer">
+                @if (isTakingCase)
+                {
+                    <i class="fas fa-spinner fa-spin"></i>
+                   
+            }
+                else
+                {
+                    <span>Take Case</span>
+                }
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Case CaseItem { get; set; } = new() { CaseTasks = new List<CaseTask>(), Documents = new List<Document>(), Hearings = new List<Hearing>() };
+
+    [Parameter]
+    public EventCallback<int> OnTakeCase { get; set; }
+
+    private bool isTakingCase;
+
+    private int CompletedTasksCount => CaseItem.CaseTasks?.Count(t => t.Status == "Completed") ?? 0;
+    private int TaskCompletionPercentage => (CaseItem.CaseTasks?.Count ?? 0) == 0 ? 0 : (int)Math.Round((double)CompletedTasksCount / CaseItem.CaseTasks.Count * 100);
+
+    private string GetStatusClass(CaseStatus status)
+    {
+        return status switch
+        {
+            CaseStatus.Open => "status-open",
+            CaseStatus.Closed => "status-closed",
+            CaseStatus.Pending => "status-pending",
+            _ => string.Empty
+        };
+    }
+
+    private async Task TakeCase(int caseId)
+    {
+        isTakingCase = true;
+        try
+        {
+            await OnTakeCase.InvokeAsync(caseId);
+        }
+        finally
+        {
+            isTakingCase = false;
+        }
+    }
+
+    private void NavigateToCase(int caseId)
+    {
+        Navigation.NavigateTo($"/cases/{caseId}");
+    }
+}

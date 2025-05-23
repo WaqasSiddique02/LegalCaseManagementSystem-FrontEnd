@@ -1,0 +1,92 @@
+﻿@using LegalCaseManagementSystem_FrontEnd.Models
+@using LegalCaseManagementSystem_FrontEnd.Services
+@inject DashboardState DashboardState
+
+<div class="case-card">
+    <div class="case-header">
+        <h3>@CaseItem.Title</h3>
+        <span class="case-status @GetStatusClass(CaseItem.Status)">
+            @CaseItem.Status.ToString()
+        </span>
+    </div>
+
+    <div class="case-body">
+        <div class="case-description">
+            <p>@CaseItem.Description</p>
+        </div>
+
+        <div class="case-details">
+            <div class="detail-row">
+                <span class="detail-label">Case ID:</span>
+                <span class="detail-value">@CaseItem.CaseId</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Start Date:</span>
+                <span class="detail-value">@CaseItem.StartDate.ToString("dd MMM yyyy")</span>
+            </div>
+            @if (CaseItem.EndDate.HasValue)
+            {
+                <div class="detail-row">
+                    <span class="detail-label">End Date:</span>
+                    <span class="detail-value">@CaseItem.EndDate.Value.ToString("dd MMM yyyy")</span>
+                </div>
+            }
+            <div class="detail-row">
+                <span class="detail-label">Client:</span>
+                <span class="detail-value">@(CaseItem.Client?.FullName ?? "Not assigned")</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Lawyer:</span>
+                <span class="detail-value">@(CaseItem.Lawyer?.FullName ?? "Not assigned")</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="case-footer">
+        <div class="case-metrics">
+            <div class="metric">
+                <i class="fas fa-tasks"></i>
+                <span>@CaseItem.CaseTasks.Count Tasks</span>
+            </div>
+            <div class="metric">
+                <i class="fas fa-file-alt"></i>
+                <span>@CaseItem.Documents.Count Documents</span>
+            </div>
+            <div class="metric">
+                <i class="fas fa-gavel"></i>
+                <span>@CaseItem.Hearings.Count Hearings</span>
+            </div>
+        </div>
+
+        @if (DashboardState.LawyerId.HasValue && CaseItem.LawyerId == 0)
+        {
+            <button class="btn btn-primary" @onclick="() => TakeCase(CaseItem.CaseId)">
+                Take Case
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Case CaseItem { get; set; } = new();
+
+    private string GetStatusClass(CaseStatus status)
+    {
+        return status switch
+        {
+            CaseStatus.Open => "status-open",
+            CaseStatus.Closed => "status-closed",
+            CaseStatus.Pending => "status-pending",
+            _ => string.Empty
+        };
+    }
+
+    [Parameter]
+    public EventCallback<int> OnTakeCase { get; set; }
+
+    private async Task TakeCase(int caseId)
+    {
+        await OnTakeCase.InvokeAsync(caseId);
+    }
+}

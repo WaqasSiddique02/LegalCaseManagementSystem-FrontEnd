@@ -1,0 +1,37 @@
+﻿@using LegalCaseManagementSystem_FrontEnd.Services
+@inject DashboardState DashboardState
+@implements IDisposable
+
+<div class="activity-card">
+    <div class="card-header">
+        <h3>Recent Activity</h3>
+    </div>
+    <div class="activity-list">
+        <LoadingAndError>
+            @foreach (var activity in DashboardState.RecentActivities)
+            {
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="@activity.Icon"></i>
+                    </div>
+                    <div class="activity-content">
+                        <p>@activity.Description</p>
+                        @* <small class="text-muted">@DashboardState.FormatDate(activity.Timestamp)</small> *@
+                    </div>
+                </div>
+            }
+        </LoadingAndError>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        DashboardState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        DashboardState.OnChange -= StateHasChanged;
+    }
+}
