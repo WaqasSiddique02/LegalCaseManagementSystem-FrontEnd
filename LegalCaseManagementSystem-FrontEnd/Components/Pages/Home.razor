@@ -1,1 +1,580 @@
-﻿
+﻿@page "/"
+<html>
+<head>
+    <title>The Legals | Premier Legal Representation</title>
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-dark-200 shadow sticky-top">
+        <div class="container py-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <img src="images/law.png" alt="The Legals Logo" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">
+                    <h1 class="ms-3 fs-3 fw-bold text-accent">The Legals</h1>
+                </div>
+                <nav class="d-none d-md-flex gap-4">
+                    <a href="#home" class="text-accent fw-medium">Home</a>
+                    <a href="#about" class="text-white">About</a>
+                    <a href="#practice" class="text-white">Practice Areas</a>
+                    <a href="#why-us" class="text-white">Why Choose Us</a>
+                    <a href="#attorneys" class="text-white">Attorneys</a>
+                    <a href="#contact" class="text-white">Contact</a>
+                </nav>
+                <button id="mobile-menu-button" class="d-md-none text-white"><i class="fas fa-bars fs-4"></i></button>
+                <div class="d-none d-md-block">
+                    <button class="btn btn-primary px-4 py-2">Login</button>
+                </div>
+            </div>
+            <!-- Mobile menu -->
+            <div id="mobile-menu" class="d-none d-md-none mt-3">
+                <a href="#home" class="d-block py-2 text-accent">Home</a>
+                <a href="#about" class="d-block py-2 text-white">About</a>
+                <a href="#practice" class="d-block py-2 text-white">Practice Areas</a>
+                <a href="#why-us" class="d-block py-2 text-white">Why Choose Us</a>
+                <a href="#attorneys" class="d-block py-2 text-white">Attorneys</a>
+                <a href="#contact" class="d-block py-2 text-white">Contact</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-bg text-white py-5 py-md-5">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-4">Your Trusted Legal Advocates</h1>
+            <p class="fs-4 mb-5 mx-auto" style="max-width: 768px;">We provide exceptional legal representation with integrity, dedication, and a commitment to justice for all our clients.</p>
+            <div class="d-flex flex-column flex-md-row justify-content-center gap-3">
+                <a href="#contact"><button class="btn btn-primary px-4 py-2 fs-5">Contact Us</button></a>
+                <a href ="#about"><button class="btn btn-outline-light px-4 py-2 fs-5">About Us</button></a>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-5 bg-dark-200">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-4 mb-md-0">
+                    <img src="https://images.unsplash.com/photo-1521791055366-0d553872125f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1469&q=80"
+                         alt="Law firm meeting"
+                         class="rounded shadow w-100 h-auto">
+                </div>
+                <div class="col-md-6">
+                    <h2 class="fs-2 fw-bold mb-4 text-accent">About Our Firm</h2>
+                    <p class="fs-5 mb-4 text-white">Founded in 1995, Justice Law Partners has built a reputation for excellence in legal representation. Our team of experienced attorneys is dedicated to providing personalized attention and strategic solutions for our clients.</p>
+                    <p class="fs-5 mb-4 text-white">With over 100 years of combined experience, we've successfully handled thousands of cases, helping clients navigate complex legal challenges with confidence.</p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white me-3" style="width: 48px; height: 48px;">
+                                <i class="fas fa-award fs-5"></i>
+                            </div>
+                            <span class="fw-medium">Award Winning</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white me-3" style="width: 48px; height: 48px;">
+                                <i class="fas fa-users fs-5"></i>
+                            </div>
+                            <span class="fw-medium">Client Focused</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white me-3" style="width: 48px; height: 48px;">
+                                <i class="fas fa-balance-scale fs-5"></i>
+                            </div>
+                            <span class="fw-medium">Experienced</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Practice Areas -->
+    <section id="practice" class="py-5 bg-dark-300">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fs-2 fw-bold mb-3 text-accent">Our Practice Areas</h2>
+                <p class="fs-5 text-white mx-auto" style="max-width: 640px;">We offer comprehensive legal services across a wide range of practice areas.</p>
+            </div>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                <!-- Practice Area 1 -->
+                <div class="col">
+                    <div class="practice-card bg-dark-200 p-4 rounded shadow transition text-center">
+                        <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mb-4 mx-auto" style="width: 64px; height: 64px;">
+                            <i class="fas fa-gavel fs-3"></i>
+                        </div>
+                        <h3 class="fs-4 fw-bold mb-3 text-white">Criminal Defense</h3>
+                        <p class="text-white mb-3">Aggressive defense strategies for all criminal charges from misdemeanors to serious felonies.</p>
+                        <a href="#" class="text-accent fw-medium d-flex align-items-center justify-content-center">Learn More <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+                <!-- Practice Area 2 -->
+                <div class="col">
+                    <div class="practice-card bg-dark-200 p-4 rounded shadow transition text-center">
+                        <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mb-4 mx-auto" style="width: 64px; height: 64px;">
+                            <i class="fas fa-home fs-3"></i>
+                        </div>
+                        <h3 class="fs-4 fw-bold mb-3 text-white">Family Law</h3>
+                        <p class="text-white mb-3">Compassionate representation for divorce, child custody, and other family law matters.</p>
+                        <a href="#" class="text-accent fw-medium d-flex align-items-center justify-content-center">Learn More <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+                <!-- Practice Area 3 -->
+                <div class="col">
+                    <div class="practice-card bg-dark-200 p-4 rounded shadow transition text-center">
+                        <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mb-4 mx-auto" style="width: 64px; height: 64px;">
+                            <i class="fas fa-car-crash fs-3"></i>
+                        </div>
+                        <h3 class="fs-4 fw-bold mb-3 text-white">Personal Injury</h3>
+                        <p class="text-white mb-3">Maximizing compensation for victims of accidents and negligence.</p>
+                        <a href="#" class="text-accent fw-medium d-flex align-items-center justify-content-center">Learn More <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+                <!-- Practice Area 4 -->
+                <div class="col">
+                    <div class="practice-card bg-dark-200 p-4 rounded shadow transition text-center">
+                        <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mb-4 mx-auto" style="width: 64px; height: 64px;">
+                            <i class="fas fa-briefcase fs-3"></i>
+                        </div>
+                        <h3 class="fs-4 fw-bold mb-3 text-white">Business Law</h3>
+                        <p class="text-white mb-3">Comprehensive legal services for businesses of all sizes.</p>
+                        <a href="#" class="text-accent fw-medium d-flex align-items-center justify-content-center">Learn More <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+                <!-- Practice Area 5 -->
+                <div class="col">
+                    <div class="practice-card bg-dark-200 p-4 rounded shadow transition text-center">
+                        <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mb-4 mx-auto" style="width: 64px; height: 64px;">
+                            <i class="fas fa-house-user fs-3"></i>
+                        </div>
+                        <h3 class="fs-4 fw-bold mb-3 text-white">Real Estate</h3>
+                        <p class="text-white mb-3">Expert guidance for all real estate transactions and disputes.</p>
+                        <a href="#" class="text-accent fw-medium d-flex align-items-center justify-content-center">Learn More <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+                <!-- Practice Area 6 -->
+                <div class="col">
+                    <div class="practice-card bg-dark-200 p-4 rounded shadow transition text-center">
+                        <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mb-4 mx-auto" style="width: 64px; height: 64px;">
+                            <i class="fas fa-file-contract fs-3"></i>
+                        </div>
+                        <h3 class="fs-4 fw-bold mb-3 text-white">Estate Planning</h3>
+                        <p class="text-white mb-3">Protecting your legacy with comprehensive estate plans.</p>
+                        <a href="#" class="text-accent fw-medium d-flex align-items-center justify-content-center">Learn More <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us -->
+    <section id="why-us" class="py-5 bg-dark-200">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fs-2 fw-bold mb-3 text-accent">Why Choose Our Firm</h2>
+                <p class="fs-5 text-white mx-auto" style="max-width: 640px;">What sets us apart from other law firms in the area.</p>
+            </div>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                <div class="col text-center p-4">
+                    <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mx-auto mb-4" style="width: 80px; height: 80px;">
+                        <i class="fas fa-star fs-2"></i>
+                    </div>
+                    <h3 class="fs-4 fw-bold mb-3 text-white">Proven Results</h3>
+                    <p class="text-white">We have a track record of successful outcomes for our clients in even the most challenging cases.</p>
+                </div>
+                <div class="col text-center p-4">
+                    <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mx-auto mb-4" style="width: 80px; height: 80px;">
+                        <i class="fas fa-user-tie fs-2"></i>
+                    </div>
+                    <h3 class="fs-4 fw-bold mb-3 text-white">Experienced Attorneys</h3>
+                    <p class="text-white">Our lawyers have decades of combined experience handling complex legal matters.</p>
+                </div>
+                <div class="col text-center p-4">
+                    <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mx-auto mb-4" style="width: 80px; height: 80px;">
+                        <i class="fas fa-hand-holding-heart fs-2"></i>
+                    </div>
+                    <h3 class="fs-4 fw-bold mb-3 text-white">Personal Attention</h3>
+                    <p class="text-white">We treat every client with the individual attention and respect they deserve.</p>
+                </div>
+                <div class="col text-center p-4">
+                    <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mx-auto mb-4" style="width: 80px; height: 80px;">
+                        <i class="fas fa-lightbulb fs-2"></i>
+                    </div>
+                    <h3 class="fs-4 fw-bold mb-3 text-white">Strategic Approach</h3>
+                    <p class="text-white">We develop customized legal strategies tailored to each client's unique situation.</p>
+                </div>
+                <div class="col text-center p-4">
+                    <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mx-auto mb-4" style="width: 80px; height: 80px;">
+                        <i class="fas fa-comments fs-2"></i>
+                    </div>
+                    <h3 class="fs-4 fw-bold mb-3 text-white">Clear Communication</h3>
+                    <p class="text-white">We keep clients informed at every step and explain legal concepts in plain language.</p>
+                </div>
+                <div class="col text-center p-4">
+                    <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white mx-auto mb-4" style="width: 80px; height: 80px;">
+                        <i class="fas fa-handshake fs-2"></i>
+                    </div>
+                    <h3 class="fs-4 fw-bold mb-3 text-white">Strong Reputation</h3>
+                    <p class="text-white">We're respected by peers, judges, and opposing counsel for our professionalism.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="py-5 bg-dark-300">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fs-2 fw-bold mb-3 text-accent">Client Testimonials</h2>
+                <p class="fs-5 text-white mx-auto" style="max-width: 640px;">Hear what our clients have to say about their experience with our firm.</p>
+            </div>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                <div class="col">
+                    <div class="bg-dark-200 p-4 rounded shadow">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle overflow-hidden me-3" style="width: 48px; height: 48px;">
+                                <img src="https://randomuser.me/api/portraits/women/45.jpg" alt="Client" class="w-100 h-100 object-fit-cover">
+                            </div>
+                            <div>
+                                <h4 class="fw-bold">Jawad Mansoor</h4>
+                                <div class="d-flex text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-white fst-italic">"The team at Justice Law Partners handled my divorce with compassion and professionalism. They made a difficult process much easier to navigate."</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="bg-dark-200 p-4 rounded shadow">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle overflow-hidden me-3" style="width: 48px; height: 48px;">
+                                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Client" class="w-100 h-100 object-fit-cover">
+                            </div>
+                            <div>
+                                <h4 class="fw-bold">Mudassir Shah</h4>
+                                <div class="d-flex text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-white fst-italic">"After my car accident, I didn't know where to turn. Justice Law Partners fought hard for me and got me the compensation I deserved."</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="bg-dark-200 p-4 rounded shadow">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle overflow-hidden me-3" style="width: 48px; height: 48px;">
+                                <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Client" class="w-100 h-100 object-fit-cover">
+                            </div>
+                            <div>
+                                <h4 class="fw-bold">Ali Asghar</h4>
+                                <div class="d-flex text-warning">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-white fst-italic">"The estate planning services were thorough and gave me peace of mind knowing my family will be taken care of. Highly recommend!"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Meet the Attorneys -->
+    <section id="attorneys" class="py-5 bg-dark-200">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fs-2 fw-bold mb-3 text-accent">Meet Our Attorneys</h2>
+                <p class="fs-5 text-white mx-auto" style="max-width: 640px;">Our team of dedicated legal professionals is ready to serve you.</p>
+            </div>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+                <!-- Attorney 1 -->
+                <div class="col">
+                    <div class="attorney-card bg-dark-300 rounded overflow-hidden shadow transition">
+                        <div style="height: 256px; overflow: hidden;">
+                            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=687&q=80"
+                                 alt="Attorney"
+                                 class="w-100 h-100 object-fit-cover">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="fs-4 fw-bold mb-2 text-white">Robert Anderson</h3>
+                            <p class="text-accent mb-3">Managing Partner</p>
+                            <p class="text-white mb-3">Specializing in corporate law and complex litigation with over 25 years of experience.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Attorney 2 -->
+                <div class="col">
+                    <div class="attorney-card bg-dark-300 rounded overflow-hidden shadow transition">
+                        <div style="height: 256px; overflow: hidden;">
+                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=688&q=80"
+                                 alt="Attorney"
+                                 class="w-100 h-100 object-fit-cover">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="fs-4 fw-bold mb-2 text-white">Elizabeth Carter</h3>
+                            <p class="text-accent mb-3">Senior Partner</p>
+                            <p class="text-white mb-3">Family law specialist with a compassionate approach to sensitive cases.</p>
+
+                        </div>
+                    </div>
+                </div>
+                <!-- Attorney 3 -->
+                <div class="col">
+                    <div class="attorney-card bg-dark-300 rounded overflow-hidden shadow transition">
+                        <div style="height: 256px; overflow: hidden;">
+                            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=687&q=80"
+                                 alt="Attorney"
+                                 class="w-100 h-100 object-fit-cover">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="fs-4 fw-bold mb-2 text-white">David Martinez</h3>
+                            <p class="text-accent mb-3">Criminal Defense Attorney</p>
+                            <p class="text-white mb-3">Former prosecutor with extensive trial experience defending clients' rights.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Attorney 4 -->
+                <div class="col">
+                    <div class="attorney-card bg-dark-300 rounded overflow-hidden shadow transition">
+                        <div style="height: 256px; overflow: hidden;">
+                            <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=687&q=80"
+                                 alt="Attorney"
+                                 class="w-100 h-100 object-fit-cover">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="fs-4 fw-bold mb-2 text-white">Sarah Williams</h3>
+                            <p class="text-accent mb-3">Personal Injury Attorney</p>
+                            <p class="text-white mb-3">Aggressive advocate for accident victims with millions recovered for clients.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Success Stories -->
+    <section class="py-5 bg-dark-300">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fs-2 fw-bold mb-3 text-accent">Success Stories</h2>
+                <p class="fs-5 text-white mx-auto" style="max-width: 640px;">Recent cases where we've made a difference for our clients.</p>
+            </div>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                <!-- Case 1 -->
+                <div class="col">
+                    <div class="success-card bg-dark-200 rounded overflow-hidden shadow">
+                        <div style="height: 192px; overflow: hidden;">
+                            <img src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80"
+                                 alt="Courtroom"
+                                 class="w-100 h-100 object-fit-cover">
+                        </div>
+                        <div class="p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="bg-accent text-white text-sm px-3 py-1 rounded-pill">Criminal Defense</span>
+                                <span class="text-sm text-muted">2023</span>
+                            </div>
+                            <h3 class="fs-4 fw-bold mb-2 text-white">Not Guilty Verdict in High-Profile Case</h3>
+                            <p class="text-white mb-3">Successfully defended client against serious felony charges, securing a complete acquittal after jury trial.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Case 2 -->
+                <div class="col">
+                    <div class="success-card bg-dark-200 rounded overflow-hidden shadow">
+                        <div style="height: 192px; overflow: hidden;">
+                            <img src="https://images.unsplash.com/photo-1589391886645-d51941baf7fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80"
+                                 alt="Accident scene"
+                                 class="w-100 h-100 object-fit-cover">
+                        </div>
+                        <div class="p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="bg-accent text-white text-sm px-3 py-1 rounded-pill">Personal Injury</span>
+                                <span class="text-sm text-muted">2023</span>
+                            </div>
+                            <h3 class="fs-4 fw-bold mb-2 text-white">$2.5 Million Settlement for Accident Victim</h3>
+                            <p class="text-white mb-3">Negotiated substantial settlement for client severely injured in trucking accident.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Case 3 -->
+                <div class="col">
+                    <div class="success-card bg-dark-200 rounded overflow-hidden shadow">
+                        <div style="height: 192px; overflow: hidden;">
+                            <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80"
+                                 alt="Business meeting"
+                                 class="w-100 h-100 object-fit-cover">
+                        </div>
+                        <div class="p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="bg-accent text-white text-sm px-3 py-1 rounded-pill">Business Law</span>
+                                <span class="text-sm text-muted">2022</span>
+                            </div>
+                            <h3 class="fs-4 fw-bold mb-2 text-white">Successful Merger Negotiation</h3>
+                            <p class="text-white mb-3">Guided client through complex $50 million business merger with favorable terms.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-5 bg-dark-200">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fs-2 fw-bold mb-3 text-accent">Contact Us</h2>
+                <p class="fs-5 text-white mx-auto" style="max-width: 640px;">Get in touch with our legal team for a consultation.</p>
+            </div>
+            <div class="row g-4 d-flex align-items-stretch">
+                <div class="col-lg-6">
+                    <div class="contact-card bg-dark-300 p-4 rounded shadow d-flex flex-column h-100">
+                        <img src="https://images.unsplash.com/photo-1505664194779-8beaceb93744?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80"
+                             alt="Law books and gavel"
+                             class="rounded w-100 h-100 object-fit-cover">
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="bg-dark-300 p-4 rounded shadow d-flex flex-column h-100">
+                        <h3 class="fs-3 fw-bold mb-4 text-white">Contact Information</h3>
+                        <div class="d-flex flex-column gap-4 flex-grow-1">
+                            <div class="d-flex">
+                                <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white me-3 mt-1" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                </div>
+                                <div>
+                                    <h4 class="fw-bold fs-5 mb-1">Our Office</h4>
+                                    <p class="text-white">123 Legal Avenue, Suite 500<br>New York, NY 10001</p>
+                                </div>
+                            </div>
+                            <div class="d-flex">
+                                <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white me-3 mt-1" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-telephone-fill"></i>
+                                </div>
+                                <div>
+                                    <h4 class="fw-bold fs-5 mb-1">Phone</h4>
+                                    <p class="text-white">Main: (212) 555-1234<br>Fax: (212) 555-5678</p>
+                                </div>
+                            </div>
+                            <div class="d-flex">
+                                <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white me-3 mt-1" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-envelope-fill"></i>
+                                </div>
+                                <div>
+                                    <h4 class="fw-bold fs-5 mb-1">Email</h4>
+                                    <p class="text-white">info@justicelawpartners.com<br>consultation@justicelawpartners.com</p>
+                                </div>
+                            </div>
+                            <div class="d-flex">
+                                <div class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white me-3 mt-1" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-clock-fill"></i>
+                                </div>
+                                <div>
+                                    <h4 class="fw-bold fs-5 mb-1">Hours</h4>
+                                    <p class="text-white">Monday - Friday: 9:00 AM - 6:00 PM<br>Saturday: By appointment only<br>Sunday: Closed</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h4 class="fw-bold fs-5 mb-3">Follow Us</h4>
+                            <div class="d-flex gap-3">
+                                <a href="#" class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white text-decoration-none" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-facebook fs-5"></i>
+                                </a>
+                                <a href="#" class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white text-decoration-none" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-twitter fs-5"></i>
+                                </a>
+                                <a href="#" class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white text-decoration-none" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-linkedin fs-5"></i>
+                                </a>
+                                <a href="#" class="bg-accent rounded-circle d-flex align-items-center justify-content-center text-white text-decoration-none" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-instagram fs-5"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark-300 text-white py-5">
+        <div class="container">
+            <div class="row row-cols-1 row-cols-md-4 g-4">
+                <div class="col">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="images/law.png" alt="The Legals Logo" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">
+                        <h3 class="fs-4 fw-bold">The Legals</h3>
+                    </div>
+                    <p class="text-white mb-3">Providing exceptional legal services with integrity and dedication since 1995.</p>
+                </div>
+                <div class="col">
+                    <h4 class="fs-5 fw-bold mb-3">Quick Links</h4>
+                    <ul class="list-unstyled d-flex flex-column gap-2">
+                        <li><a href="#home" class="text-white text-decoration-none">Home</a></li>
+                        <li><a href="#about" class="text-white text-decoration-none">About Us</a></li>
+                        <li><a href="#practice" class="text-white text-decoration-none">Practice Areas</a></li>
+                        <li><a href="#attorneys" class="text-white text-decoration-none">Our Attorneys</a></li>
+                        <li><a href="#contact" class="text-white text-decoration-none">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col">
+                    <h4 class="fs-5 fw-bold mb-3">Practice Areas</h4>
+                    <ul class="list-unstyled d-flex flex-column gap-2">
+                        <li><a href="#" class="text-white text-decoration-none">Criminal Defense</a></li>
+                        <li><a href="#" class="text-white text-decoration-none">Family Law</a></li>
+                        <li><a href="#" class="text-white text-decoration-none">Personal Injury</a></li>
+                        <li><a href="#" class="text-white text-decoration-none">Business Law</a></li>
+                        <li><a href="#" class="text-white text-decoration-none">Real Estate</a></li>
+                    </ul>
+                </div>
+                <div class="col">
+                    <h4 class="fs-5 fw-bold mb-3">Newsletter</h4>
+                    <p class="text-white mb-3">Subscribe to our newsletter for legal updates and firm news.</p>
+                    <div class="input-group">
+                        <input type="email" class="form-control" placeholder="Your email">
+                        <button type="button" class="btn btn-accent"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="border-top border-dark mt-5 pt-4 text-center text-white">
+                <p>© 2025 The Legals. All rights reserved. | <a href="#" class="text-white text-decoration-none">Privacy Policy</a> | <a href="#" class="text-white text-decoration-none">Terms of Service</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('d-none');
+        });
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
