@@ -1,5 +1,57 @@
-﻿<h3>Hearings</h3>
+﻿@using LegalCaseManagementSystem_FrontEnd.Models
+@using LegalCaseManagementSystem_FrontEnd.Services
+@inject DashboardState DashboardState
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div class="hearings-card">
+    <div class="card-header">
+        <h3>Upcoming Hearings</h3>
+        <button class="btn btn-sm btn-primary" @onclick="OnShowAllHearings">
+            View All
+        </button>
+    </div>
+    <div class="hearings-list">
+        <LoadingAndError>
+            @if (DashboardState.UpcomingHearings.Any())
+            {
+                @foreach (var hearing in DashboardState.UpcomingHearings.OrderBy(h => h.HearingDate).Take(3))
+                {
+                    <div class="hearing-item">
+                        <div class="hearing-date">
+                            <span class="day">@hearing.HearingDate.ToString("dd")</span>
+                            <span class="month">@hearing.HearingDate.ToString("MMM")</span>
+                        </div>
+                        <div class="hearing-info">
+                            <h4>@(hearing.Case?.Title ?? "Untitled Case")</h4>
+                            <p>
+                                <i class="fas fa-clock"></i> @hearing.HearingDate.ToString("h:mm tt") •
+                                <i class="fas fa-map-marker-alt"></i> @hearing.Venue
+                            </p>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted text-center py-3">No upcoming hearings available.</p>
+            }
+            <p class="text-muted">Debug: @DashboardState.UpcomingHearings.Count hearings loaded.</p>
+        </LoadingAndError>
+    </div>
+</div>
 
 @code {
+    [Parameter]
+    public EventCallback OnShowAllHearings { get; set; }
 
+    protected override void OnInitialized()
+    {
+        DashboardState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        DashboardState.OnChange -= StateHasChanged;
+    }
 }

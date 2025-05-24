@@ -1,0 +1,81 @@
+﻿@using LegalCaseManagementSystem_FrontEnd.Models
+@using LegalCaseManagementSystem_FrontEnd.Services
+@inject DashboardState DashboardState
+@implements IDisposable
+
+<div class="stats-grid">
+    <div class="stat-card" style="--card-color: #4e73df">
+        <div class="stat-icon">
+            <i class="fas fa-gavel"></i>
+        </div>
+        <div class="stat-info">
+            <h3>@ActiveCasesCount</h3>
+            <p>Active Cases</p>
+            <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i> @ActiveCasesTrend%
+            </span>
+        </div>
+    </div>
+    <div class="stat-card" style="--card-color: #1cc88a">
+        <div class="stat-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-info">
+            <h3>@CompletedTasksCount</h3>
+            <p>Tasks Completed</p>
+            <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i> @CompletedTasksTrend%
+            </span>
+        </div>
+    </div>
+    <div class="stat-card" style="--card-color: #f6c23e">
+        <div class="stat-icon">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-info">
+            <h3>@DashboardState.UpcomingHearings.Count</h3>
+            <p>Upcoming Hearings</p>
+            <span class="stat-trend negative">
+                <i class="fas fa-arrow-down"></i> @HearingsTrend%
+            </span>
+        </div>
+    </div>
+    <div class="stat-card" style="--card-color: #e74a3b">
+        <div class="stat-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-info">
+            <h3>@PendingTasksCount</h3>
+            <p>Pending Tasks</p>
+            <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i> @PendingTasksTrend%
+            </span>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int ActiveCasesCount => DashboardState.Cases.Count(c => c.Status == CaseStatus.Open || c.Status == CaseStatus.Active || c.Status == CaseStatus.InProgress);
+    private int CompletedTasksCount => DashboardState.RecentTasks.Count(t => t.Status == "Completed");
+    private int PendingTasksCount => DashboardState.RecentTasks.Count(t => t.Status == "Pending");
+    private int ActiveCasesTrend => CalculateTrend(ActiveCasesCount);
+    private int CompletedTasksTrend => CalculateTrend(CompletedTasksCount);
+    private int HearingsTrend => CalculateTrend(DashboardState.UpcomingHearings.Count);
+    private int PendingTasksTrend => CalculateTrend(PendingTasksCount);
+
+    private int CalculateTrend(int currentCount)
+    {
+        // TODO: Implement logic to compare with previous data or return a default
+        return 0;
+    }
+
+    protected override void OnInitialized()
+    {
+        DashboardState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        DashboardState.OnChange -= StateHasChanged;
+    }
+}
