@@ -13,6 +13,7 @@ namespace LegalCaseManagementSystem_FrontEnd.Services
         public List<Hearing> UpcomingHearings { get; set; } = new();
         public List<CaseTask> RecentTasks { get; set; } = new();
         public List<Activity> RecentActivities { get; set; } = new();
+        public List<Invoice> Invoices { get; set; } = new(); 
         public string? ErrorMessage { get; set; }
         public bool IsLoading { get; set; }
 
