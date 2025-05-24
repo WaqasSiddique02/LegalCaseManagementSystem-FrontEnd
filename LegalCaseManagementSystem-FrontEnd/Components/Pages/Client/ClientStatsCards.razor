@@ -82,9 +82,8 @@
                     PropertyNameCaseInsensitive = true
                 });
 
-            if (client?.ClientId == null) return;
 
-            var invoicesResponse = await Http.GetAsync($"/api/Clients/{client.ClientId}/invoices?status=unpaid");
+            var invoicesResponse = await Http.GetAsync($"/api/Clients/invoices?status=unpaid");
             if (invoicesResponse.IsSuccessStatusCode)
             {
                 var invoicesContent = await invoicesResponse.Content.ReadAsStringAsync();

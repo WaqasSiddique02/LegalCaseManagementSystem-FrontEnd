@@ -1,140 +1,372 @@
-﻿@page "/client"
+﻿@page "/client/{userId:int}"
 @using LegalCaseManagementSystem_FrontEnd.Models
-@using LegalCaseManagementSystem_FrontEnd.Services
-@using LegalCaseManagementSystem_FrontEnd.Components
-@using Microsoft.AspNetCore.Components.Authorization
+@using System.Text.Json.Serialization
+@using System.Text.Json
 @inject IHttpClientFactory HttpClientFactory
-@inject AuthenticationStateProvider AuthStateProvider
-@inject DashboardState DashboardState
 @inject NavigationManager Navigation
-@implements IDisposable
 
-<div class="dashboard @(DashboardState.IsDarkMode ? "dark-mode" : "")">
-    <Header />
-    <div class="dashboard-grid">
-        <ClientStatsCards />
-        <div class="content-grid">
-            <div class="cases-section">
-                <div class="section-header">
-                    <h2>My Cases</h2>
-                    <div class="case-count">Total: @DashboardState.Cases.Count</div>
-                </div>
-                <LoadingAndError>
-                    @if (DashboardState.Cases.Any())
-                    {
-                        <div class="cases-grid">
-                            @foreach (var caseItem in DashboardState.Cases)
-                            {
-                                <CaseDetailsCard CaseItem="caseItem" />
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="no-cases">
-                            <i class="fas fa-folder-open"></i>
-                            <p>No cases assigned yet</p>
-                        </div>
-                    }
-                </LoadingAndError>
+
+<div class="client-dashboard-container">
+    <h3>Client Dashboard</h3>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
-            <ClientHearings OnShowAllHearings="ShowAllHearings" />
-            <ClientInvoices />
         </div>
-    </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <!-- User and Client Info Section -->
+        <div class="client-info-section mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Client Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Name:</strong> @client.FullName</p>
+                            <p><strong>Contact:</strong> @client.ContactInfo</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Username:</strong> @user?.Username</p>
+                            <p><strong>Email:</strong> @user?.Email</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cases Section -->
+        <div class="cases-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Cases</h4>
+            </div>
+
+            @if (cases != null && cases.Any())
+            {
+                <div class="accordion" id="casesAccordion">
+                    @foreach (var caseItem in cases)
+                    {
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading-@caseItem.CaseId">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#collapse-@caseItem.CaseId" aria-expanded="false" 
+                                    aria-controls="collapse-@caseItem.CaseId">
+                                    <span class="me-3">@caseItem.Title</span>
+                                    <span class="badge @GetStatusBadgeClass(caseItem.Status) me-2">
+                                        @caseItem.Status
+                                    </span>
+                                    <small class="text-muted ms-auto">
+                                        @caseItem.StartDate.ToShortDateString()
+                                    </small>
+                                </button>
+                            </h2>
+                            <div id="collapse-@caseItem.CaseId" class="accordion-collapse collapse" 
+                                aria-labelledby="heading-@caseItem.CaseId" data-bs-parent="#casesAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-3">
+                                        <p>@caseItem.Description</p>
+                                        <p><strong>Lawyer:</strong> @lawyers.GetValueOrDefault(caseItem.LawyerId)?.FullName</p>
+                                        <p><strong>Status:</strong> @caseItem.Status</p>
+                                        <p><strong>Start Date:</strong> @caseItem.StartDate.ToShortDateString()</p>
+                                        @if (caseItem.EndDate.HasValue)
+                                        {
+                                            <p><strong>End Date:</strong> @caseItem.EndDate.Value.ToShortDateString()</p>
+                                        }
+                                    </div>
+
+                                    <!-- Documents Subsection -->
+                                    <div class="mb-4">
+                                        <h5>Documents</h5>
+                                        @if (documents.TryGetValue(caseItem.CaseId, out var caseDocuments) && caseDocuments.Any())
+                                        {
+                                            <div class="list-group">
+                                                @foreach (var doc in caseDocuments)
+                                                {
+                                                    <a href="@doc.FilePath" target="_blank" class="list-group-item list-group-item-action">
+                                                        <i class="bi bi-file-earmark-text me-2"></i>
+                                                        @doc.Title
+                                                        <small class="text-muted ms-2">
+                                                            (uploaded @doc.UploadedAt.ToShortDateString())
+                                                        </small>
+                                                    </a>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted">No documents found</p>
+                                        }
+                                    </div>
+
+                                    <!-- Hearings Subsection -->
+                                    <div class="mb-4">
+                                        <h5>Hearings</h5>
+                                        @if (hearings.TryGetValue(caseItem.CaseId, out var caseHearings) && caseHearings.Any())
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-sm">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Date</th>
+                                                            <th>Venue</th>
+                                                            <th>Outcome</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var hearing in caseHearings)
+                                                        {
+                                                            <tr>
+                                                                <td>@hearing.HearingDate.ToShortDateString()</td>
+                                                                <td>@hearing.Venue</td>
+                                                                <td>@hearing.Outcome</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted">No hearings scheduled</p>
+                                        }
+                                    </div>
+
+                                    <!-- Invoices Subsection -->
+                                    <div class="mb-2">
+                                        <h5>Invoices</h5>
+                                        @if (invoices.TryGetValue(caseItem.CaseId, out var caseInvoices) && caseInvoices.Any())
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-sm">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Amount</th>
+                                                            <th>Issued Date</th>
+                                                            <th>Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var invoice in caseInvoices)
+                                                        {
+                                                            <tr>
+                                                                <td>@invoice.Amount.ToString("C")</td>
+                                                                <td>@invoice.IssuedDate.ToShortDateString()</td>
+                                                                <td>
+                                                                    <span class="badge @GetInvoiceStatusBadge(invoice.Status)">
+                                                                        @invoice.Status
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted">No invoices found</p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info" role="alert">
+                    No cases found for this client
+                </div>
+            }
+        </div>
+    }
 </div>
 
 @code {
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
 
+    [Parameter]
+    public int UserId { get; set; }
+
+    private User? user;
+    private LegalCaseManagementSystem_FrontEnd.Models.Client? client;
+    private List<LegalCaseManagementSystem_FrontEnd.Models.Case> cases = new();
+    private Dictionary<int, List<Document>> documents = new();
+    private Dictionary<int, List<Hearing>> hearings = new();
+    private Dictionary<int, List<Invoice>> invoices = new();
+    private Dictionary<int, Lawyer> lawyers = new();
+
+    private bool isLoading = true;
+    private string? errorMessage;
+
     protected override async Task OnInitializedAsync()
     {
-        await LoadClientData();
-        DashboardState.OnChange += StateHasChanged;
-    }
-
-    private async Task LoadClientData()
-    {
-        DashboardState.IsLoading = true;
-        DashboardState.ErrorMessage = null;
-
         try
         {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            
-            if (string.IsNullOrEmpty(userId))
+            Console.WriteLine("Client properties: " +
+                string.Join(", ", typeof(LegalCaseManagementSystem_FrontEnd.Models.Client).GetProperties().Select(p => p.Name)));
+            Console.WriteLine("Model namespace: " + typeof(LegalCaseManagementSystem_FrontEnd.Models.Client).Namespace);
+
+            var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    Converters = { new JsonStringEnumConverter() }
+                };
+
+            // Fetch user data
+            var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
+            if (!userResponse.IsSuccessStatusCode)
             {
-                DashboardState.ErrorMessage = "User not authenticated";
+                errorMessage = $"Error loading user: {userResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            user = await userResponse.Content.ReadFromJsonAsync<User>(options);
+
+            // Fetch client data associated with this user
+            var clientsResponse = await Http.GetAsync("/api/Clients");
+            if (!clientsResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading clients: {clientsResponse.StatusCode}";
+                isLoading = false;
                 return;
             }
 
-            var clientResponse = await Http.GetAsync($"/api/Clients/{userId}");
-            if (!clientResponse.IsSuccessStatusCode)
+            var allClients = await clientsResponse.Content.ReadFromJsonAsync<List<LegalCaseManagementSystem_FrontEnd.Models.Client>>(options);
+            client = allClients?.FirstOrDefault(c => c.UserId == UserId);
+
+            if (client == null)
             {
-                DashboardState.ErrorMessage = $"Error loading client data: {clientResponse.StatusCode}";
+                errorMessage = "No client found for this user";
+                isLoading = false;
                 return;
             }
 
-            var clientContent = await clientResponse.Content.ReadAsStringAsync();
-            var client = System.Text.Json.JsonSerializer.Deserialize<Client>(clientContent, new System.Text.Json.JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            var casesResponse = await Http.GetAsync($"/api/Cases/{ClientId}");
+            // Fetch cases for this client
+            var casesResponse = await Http.GetAsync("/api/Cases");
             if (!casesResponse.IsSuccessStatusCode)
             {
-                DashboardState.ErrorMessage = $"Error loading cases: {casesResponse.StatusCode}";
+                errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
+                isLoading = false;
                 return;
             }
 
-            var casesContent = await casesResponse.Content.ReadAsStringAsync();
-            DashboardState.Cases = System.Text.Json.JsonSerializer.Deserialize<List<Case>>(casesContent, new System.Text.Json.JsonSerializerOptions
+            try
             {
-                PropertyNameCaseInsensitive = true
-            }) ?? new List<Case>();
-
-            DashboardState.UpcomingHearings = new List<Hearing>();
-            foreach (var caseItem in DashboardState.Cases)
+                var jsonResponse = await casesResponse.Content.ReadAsStringAsync();
+                Console.WriteLine("Cases JSON Response: " + jsonResponse);
+                var allCases = await casesResponse.Content.ReadFromJsonAsync<List<LegalCaseManagementSystem_FrontEnd.Models.Case>>(options);
+                cases = allCases?.Where(c => c.ClientId == client.ClientId).ToList() ?? new List<LegalCaseManagementSystem_FrontEnd.Models.Case>();
+            }
+            catch (JsonException jsonEx)
             {
-                var hearingsResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Hearings");
-                if (hearingsResponse.IsSuccessStatusCode)
-                {
-                    var hearingsContent = await hearingsResponse.Content.ReadAsStringAsync();
-                    var hearings = System.Text.Json.JsonSerializer.Deserialize<List<Hearing>>(hearingsContent, new System.Text.Json.JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    }) ?? new List<Hearing>();
-
-                    DashboardState.UpcomingHearings.AddRange(
-                        hearings.Where(h => h.HearingDate >= DateTime.Now)
-                               .OrderBy(h => h.HearingDate)
-                               .Take(3)
-                    );
-                }
+                errorMessage = $"Failed to deserialize cases: {jsonEx.Message}";
+                Console.WriteLine(jsonEx.ToString());
+                isLoading = false;
+                return;
             }
 
-            DashboardState.NotifyStateChanged();
+            // Fetch related data for each case
+            var tasks = new List<Task>();
+
+            foreach (var caseItem in cases)
+            {
+                tasks.Add(LoadCaseDetails(caseItem.CaseId));
+            }
+
+            await Task.WhenAll(tasks);
         }
         catch (Exception ex)
         {
-            DashboardState.ErrorMessage = $"Exception loading data: {ex.Message}";
+            errorMessage = $"An error occurred: {ex.Message}";
+            Console.WriteLine(ex.ToString());
         }
         finally
         {
-            DashboardState.IsLoading = false;
-            DashboardState.NotifyStateChanged();
+            isLoading = false;
         }
     }
 
-    private void ShowAllHearings()
+    private async Task LoadCaseDetails(int caseId)
     {
-        Navigation.NavigateTo("/client/hearings");
+        var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+        // Get lawyer for this case
+        var caseItem = cases.First(c => c.CaseId == caseId);
+        if (!lawyers.ContainsKey(caseItem.LawyerId))
+        {
+            var lawyerResponse = await Http.GetAsync($"/api/Lawyers/{caseItem.LawyerId}");
+            if (lawyerResponse.IsSuccessStatusCode)
+            {
+                var lawyer = await lawyerResponse.Content.ReadFromJsonAsync<Lawyer>(options);
+                if (lawyer != null)
+                {
+                    lawyers[caseItem.LawyerId] = lawyer;
+                }
+            }
+        }
+
+        // Get documents
+        var docsResponse = await Http.GetAsync($"/api/cases/{caseId}/Documents");
+        if (docsResponse.IsSuccessStatusCode)
+        {
+            documents[caseId] = await docsResponse.Content.ReadFromJsonAsync<List<Document>>(options) ?? new List<Document>();
+        }
+
+        // Get hearings
+        var hearingsResponse = await Http.GetAsync($"/api/cases/{caseId}/Hearings");
+        if (hearingsResponse.IsSuccessStatusCode)
+        {
+            hearings[caseId] = await hearingsResponse.Content.ReadFromJsonAsync<List<Hearing>>(options) ?? new List<Hearing>();
+        }
+
+        // Get invoices
+        var invoicesResponse = await Http.GetAsync($"/api/cases/{caseId}/Invoices");
+        if (invoicesResponse.IsSuccessStatusCode)
+        {
+            invoices[caseId] = await invoicesResponse.Content.ReadFromJsonAsync<List<Invoice>>(options) ?? new List<Invoice>();
+        }
     }
 
-    public void Dispose()
+    private string GetStatusBadgeClass(CaseStatus status)
     {
-        DashboardState.OnChange -= StateHasChanged;
+        return status switch
+        {
+            CaseStatus.Open => "bg-primary",
+            CaseStatus.Closed => "bg-secondary",
+            CaseStatus.Pending => "bg-warning",
+            CaseStatus.Active => "bg-success",
+            CaseStatus.Completed => "bg-info",
+            CaseStatus.InProgress => "bg-primary",
+            _ => "bg-light text-dark"
+        };
+    }
+
+    private string GetInvoiceStatusBadge(string status)
+    {
+        return status switch
+        {
+            "Paid" => "bg-success",
+            "Unpaid" => "bg-danger",
+            "Pending" => "bg-warning",
+            "Partial" => "bg-info",
+            _ => "bg-secondary"
+        };
     }
 }

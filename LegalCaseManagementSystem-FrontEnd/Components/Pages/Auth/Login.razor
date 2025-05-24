@@ -74,16 +74,17 @@
                         Navigation.NavigateTo("/dashboard");
                         break;
                     case "client":
-                        Navigation.NavigateTo("/client");
+                        Navigation.NavigateTo($"/client/{authResponse.UserId}");
                         break;
                     case "lawyer":
-                        Navigation.NavigateTo("/lawyer-dashboard");
+                        Navigation.NavigateTo($"/lawyer-dashboard/{authResponse.UserId}");
                         break;
                     default:
                         errorMessage = "Unknown user role";
                         AuthService.ClearAuthToken();
                         break;
                 }
+
             }
             else
             {
