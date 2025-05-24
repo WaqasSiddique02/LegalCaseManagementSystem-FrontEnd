@@ -1,74 +1,183 @@
 ﻿:root {
-    --primary: #1a365d;
-    --secondary: #2c5282;
-    --accent: #e2b979;
-    --dark-100: #1a1a1a;
-    --dark-200: #2d2d2d;
-    --dark-300: #3c3c3c;
+    --slate-blue: #2B3A67;
+    --charcoal: #333333;
+    --soft-gray: #E5E7EB;
+    --gold-accent: #D4A017;
+    --off-white: #F9FAFB;
+    --muted-gray: #9CA3AF;
 }
 
 body {
-    font-family: 'Georgia', serif;
-    background-color: var(--dark-100);
-    color: #ffffff;
+    font-family: 'Merriweather', serif;
+    background-color: var(--charcoal);
+    color: var(--off-white);
+    line-height: 1.7;
+    font-size: 1.1rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Lora', serif;
+    color: var(--gold-accent);
+    font-weight: 700;
+}
+
+a, p, span {
+    color: var(--off-white);
+}
+
+.text-muted {
+    color: var(--muted-gray);
 }
 
 .hero-bg {
-    background-image: linear-gradient(rgba(26, 54, 93, 0.9), rgba(26, 54, 93, 0.9)), url('https://images.unsplash.com/photo-1589829545851-0c5c5d0b0b0a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80');
+    background-image: linear-gradient(rgba(43, 58, 103, 0.85), rgba(43, 58, 103, 0.85));
     background-size: cover;
     background-position: center;
 }
 
-.practice-card:hover {
+.practice-card:hover, .attorney-card:hover, .success-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-}
-
-.attorney-card:hover, .success-card:hover {
-    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
 }
 
 .contact-card {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
 }
 
 .btn-accent {
-    background-color: var(--accent);
-    color: #fff;
+    background-color: var(--gold-accent);
+    color: var(--off-white);
+    font-family: 'Lora', serif;
+    font-weight: 700;
+    border: none;
 }
 
     .btn-accent:hover {
-        background-color: #d4a55e;
+        background-color: #b58900;
     }
 
-.bg-dark-200 {
-    background-color: var(--dark-200);
+.btn-outline-light {
+    color: var(--off-white);
+    border-color: var(--off-white);
+    font-family: 'Lora', serif;
 }
 
-.bg-dark-300 {
-    background-color: var(--dark-300);
-}
-
-.text-primary {
-    color: var(--primary);
-}
-
-.text-accent {
-    color: var(--accent);
-}
-
-a.text-accent:hover {
-    color: #d4a55e;
-}
+    .btn-outline-light:hover {
+        background-color: var(--gold-accent);
+        color: var(--off-white);
+        border-color: var(--gold-accent);
+    }
 
 .form-control, .form-select {
-    background-color: var(--dark-200);
-    border-color: var(--dark-300);
-    color: #fff;
+    background-color: var(--soft-gray);
+    border-color: var(--slate-blue);
+    color: var(--charcoal);
+    font-family: 'Merriweather', serif;
 }
 
     .form-control:focus, .form-select:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 0.25rem rgba(226, 185, 121, 0.25);
+        border-color: var(--gold-accent);
+        box-shadow: 0 0 0 0.2rem rgba(212, 160, 23, 0.25);
     }
+
+
+header {
+    background-color: var(--slate-blue);
+}
+
+#home {
+    background-color: var(--charcoal);
+}
+
+#about {
+    background-color: var(--soft-gray);
+    color: var(--charcoal);
+}
+
+    #about p, #about a, #about span {
+        color: var(--charcoal);
+    }
+
+#practice {
+    background-color: var(--slate-blue);
+}
+
+    #practice .practice-card {
+        background-color: var(--charcoal);
+    }
+
+#why-us {
+    background-color: var(--charcoal);
+}
+
+#testimonials {
+    background-color: var(--soft-gray);
+    color: var(--charcoal);
+}
+
+    #testimonials .bg-dark {
+        background-color: var(--slate-blue);
+    }
+
+    #testimonials p, #testimonials a, #testimonials span {
+        color: var(--off-white);
+    }
+
+#attorneys {
+    background-color: var(--slate-blue);
+}
+
+    #attorneys .attorney-card {
+        background-color: var(--charcoal);
+    }
+
+#success-stories {
+    background-color: var(--charcoal);
+}
+
+    #success-stories .success-card {
+        background-color: var(--soft-gray);
+        color: var(--charcoal);
+    }
+
+    #success-stories p, #success-stories a, #success-stories span {
+        color: var(--charcoal);
+    }
+
+
+#contact {
+    background-color: var(--off-white);
+    color: var(--charcoal);
+}
+
+    #contact .bg-dark {
+        background-color: var(--off-white);
+    }
+
+    #contact p, #contact a, #contact span {
+        color: var(--charcoal);
+    }
+
+footer {
+    background-color: var(--slate-blue);
+}
+
+nav a {
+    color: var(--off-white);
+    font-family: 'Lora', serif;
+    font-weight: 500;
+}
+
+    nav a.text-accent {
+        color: var(--gold-accent);
+    }
+
+    nav a:hover {
+        color: var(--gold-accent);
+    }
+
+.rounded-circle.bg-accent {
+    background-color: var(--gold-accent);
+}
 
