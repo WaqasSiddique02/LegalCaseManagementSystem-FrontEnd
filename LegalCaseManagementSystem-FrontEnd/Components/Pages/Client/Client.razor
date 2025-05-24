@@ -1,0 +1,140 @@
+﻿@page "/client"
+@using LegalCaseManagementSystem_FrontEnd.Models
+@using LegalCaseManagementSystem_FrontEnd.Services
+@using LegalCaseManagementSystem_FrontEnd.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IHttpClientFactory HttpClientFactory
+@inject AuthenticationStateProvider AuthStateProvider
+@inject DashboardState DashboardState
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div class="dashboard @(DashboardState.IsDarkMode ? "dark-mode" : "")">
+    <Header />
+    <div class="dashboard-grid">
+        <ClientStatsCards />
+        <div class="content-grid">
+            <div class="cases-section">
+                <div class="section-header">
+                    <h2>My Cases</h2>
+                    <div class="case-count">Total: @DashboardState.Cases.Count</div>
+                </div>
+                <LoadingAndError>
+                    @if (DashboardState.Cases.Any())
+                    {
+                        <div class="cases-grid">
+                            @foreach (var caseItem in DashboardState.Cases)
+                            {
+                                <CaseDetailsCard CaseItem="caseItem" />
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-cases">
+                            <i class="fas fa-folder-open"></i>
+                            <p>No cases assigned yet</p>
+                        </div>
+                    }
+                </LoadingAndError>
+            </div>
+            <ClientHearings OnShowAllHearings="ShowAllHearings" />
+            <ClientInvoices />
+        </div>
+    </div>
+</div>
+
+@code {
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClientData();
+        DashboardState.OnChange += StateHasChanged;
+    }
+
+    private async Task LoadClientData()
+    {
+        DashboardState.IsLoading = true;
+        DashboardState.ErrorMessage = null;
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                DashboardState.ErrorMessage = "User not authenticated";
+                return;
+            }
+
+            var clientResponse = await Http.GetAsync($"/api/Clients/{userId}");
+            if (!clientResponse.IsSuccessStatusCode)
+            {
+                DashboardState.ErrorMessage = $"Error loading client data: {clientResponse.StatusCode}";
+                return;
+            }
+
+            var clientContent = await clientResponse.Content.ReadAsStringAsync();
+            var client = System.Text.Json.JsonSerializer.Deserialize<Client>(clientContent, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            var casesResponse = await Http.GetAsync($"/api/Cases/{ClientId}");
+            if (!casesResponse.IsSuccessStatusCode)
+            {
+                DashboardState.ErrorMessage = $"Error loading cases: {casesResponse.StatusCode}";
+                return;
+            }
+
+            var casesContent = await casesResponse.Content.ReadAsStringAsync();
+            DashboardState.Cases = System.Text.Json.JsonSerializer.Deserialize<List<Case>>(casesContent, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            }) ?? new List<Case>();
+
+            DashboardState.UpcomingHearings = new List<Hearing>();
+            foreach (var caseItem in DashboardState.Cases)
+            {
+                var hearingsResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Hearings");
+                if (hearingsResponse.IsSuccessStatusCode)
+                {
+                    var hearingsContent = await hearingsResponse.Content.ReadAsStringAsync();
+                    var hearings = System.Text.Json.JsonSerializer.Deserialize<List<Hearing>>(hearingsContent, new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }) ?? new List<Hearing>();
+
+                    DashboardState.UpcomingHearings.AddRange(
+                        hearings.Where(h => h.HearingDate >= DateTime.Now)
+                               .OrderBy(h => h.HearingDate)
+                               .Take(3)
+                    );
+                }
+            }
+
+            DashboardState.NotifyStateChanged();
+        }
+        catch (Exception ex)
+        {
+            DashboardState.ErrorMessage = $"Exception loading data: {ex.Message}";
+        }
+        finally
+        {
+            DashboardState.IsLoading = false;
+            DashboardState.NotifyStateChanged();
+        }
+    }
+
+    private void ShowAllHearings()
+    {
+        Navigation.NavigateTo("/client/hearings");
+    }
+
+    public void Dispose()
+    {
+        DashboardState.OnChange -= StateHasChanged;
+    }
+}

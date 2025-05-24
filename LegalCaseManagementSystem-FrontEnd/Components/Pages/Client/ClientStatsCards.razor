@@ -1,0 +1,117 @@
+﻿@using LegalCaseManagementSystem_FrontEnd.Models
+@using LegalCaseManagementSystem_FrontEnd.Services
+@using LegalCaseManagementSystem_FrontEnd.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@inject DashboardState DashboardState
+
+<div class="stats-grid">
+    <div class="stat-card" style="--card-color: var(--primary)">
+        <div class="stat-icon">
+            <i class="fas fa-gavel"></i>
+        </div>
+        <div class="stat-info">
+            <h3>@DashboardState.Cases.Count(c => c.Status == CaseStatus.Open)</h3>
+            <p>Active Cases</p>
+            <span class="stat-trend positive">
+                <i class="fas fa-arrow-up"></i>
+                @(DashboardState.Cases.Count > 0 ? "Ongoing" : "None")
+            </span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="--card-color: var(--warning)">
+        <div class="stat-icon">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-info">
+            <h3>@DashboardState.UpcomingHearings.Count</h3>
+            <p>Upcoming Hearings</p>
+            <span class="stat-trend">
+                <i class="fas fa-calendar"></i>
+                Next: @(DashboardState.UpcomingHearings.Count > 0 ? DashboardState.UpcomingHearings[0].HearingDate.ToString("MMM dd") : "None")
+            </span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="--card-color: var(--danger)">
+        <div class="stat-icon">
+            <i class="fas fa-file-invoice-dollar"></i>
+        </div>
+        <div class="stat-info">
+            <h3>@UnpaidInvoicesCount</h3>
+            <p>Unpaid Invoices</p>
+            <span class="stat-trend negative">
+                <i class="fas fa-exclamation-circle"></i>
+                @(UnpaidInvoicesCount > 0 ? "Pending" : "All Paid")
+            </span>
+        </div>
+    </div>
+</div>
+
+@code {
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+    private int UnpaidInvoicesCount { get; set; } = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInvoiceData();
+        DashboardState.OnChange += StateHasChanged;
+    }
+
+    private async Task LoadInvoiceData()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId)) return;
+
+            var clientResponse = await Http.GetAsync($"/api/Clients/{userId}");
+            if (!clientResponse.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var clientContent = await clientResponse.Content.ReadAsStringAsync();
+            var client = System.Text.Json.JsonSerializer.Deserialize<Client>(clientContent, new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            if (client?.ClientId == null) return;
+
+            var invoicesResponse = await Http.GetAsync($"/api/Clients/{client.ClientId}/invoices?status=unpaid");
+            if (invoicesResponse.IsSuccessStatusCode)
+            {
+                var invoicesContent = await invoicesResponse.Content.ReadAsStringAsync();
+                var invoices = System.Text.Json.JsonSerializer.Deserialize<List<Invoice>>(invoicesContent, new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                UnpaidInvoicesCount = invoices?.Count ?? 0;
+                if (invoices != null)
+                {
+                    DashboardState.Invoices = invoices;
+                }
+            }
+        }
+        catch
+        {
+            UnpaidInvoicesCount = 0;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        DashboardState.OnChange -= StateHasChanged; 
+    }
+}

@@ -1,0 +1,114 @@
+﻿@page "/client/cases/{CaseId:int}"
+@using LegalCaseManagementSystem_FrontEnd.Models
+@using LegalCaseManagementSystem_FrontEnd.Services
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+
+<div class="case-detail-container">
+    <div class="case-header">
+        <button class="btn btn-back" @onclick="NavigateBack">
+            <i class="fas fa-arrow-left"></i> Back to Cases
+        </button>
+        <h2>@CaseItem?.Title</h2>
+        <div class="case-status @CaseItem?.Status.ToString().ToLower()">
+            @CaseItem?.Status
+        </div>
+    </div>
+
+    <div class="case-description">
+        <h3>Description</h3>
+        <p>@CaseItem?.Description</p>
+    </div>
+
+    <div class="case-details-grid">
+        <div class="case-info">
+            <h3>Case Information</h3>
+            <div class="detail-row">
+                <span class="detail-label">Case ID:</span>
+                <span class="detail-value">@CaseItem?.CaseId</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Opened Date:</span>
+                <span class="detail-value">@CaseItem?.StartDate.ToString("MMM dd, yyyy")</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Assigned Lawyer:</span>
+                <span class="detail-value">@CaseItem?.Lawyer?.FullName</span>
+            </div>
+        </div>
+
+        <div class="case-tabs">
+            <div class="tabs-header">
+                <button class="@GetTabClass("tasks")" @onclick='() => ActiveTab = "tasks"'>
+                    <i class="fas fa-tasks"></i> Tasks
+                </button>
+                <button class="@GetTabClass("hearings")" @onclick='() => ActiveTab = "hearings"'>
+                    <i class="fas fa-calendar-alt"></i> Hearings
+                </button>
+                <button class="@GetTabClass("documents")" @onclick='() => ActiveTab = "documents"'>
+                    <i class="fas fa-file-alt"></i> Documents
+                </button>
+                <button class="@GetTabClass("invoices")" @onclick='() => ActiveTab = "invoices"'>
+                    <i class="fas fa-file-invoice-dollar"></i> Invoices
+                </button>
+            </div>
+
+            <div class="tabs-content">
+                @if (ActiveTab == "tasks")
+                {
+                    <CaseTasks CaseId="CaseId" />
+                }
+                else if (ActiveTab == "hearings")
+                {
+                    <CaseHearings CaseId="CaseId" />
+                }
+                else if (ActiveTab == "documents")
+                {
+                    <CaseDocuments CaseId="CaseId" />
+                }
+                else if (ActiveTab == "invoices")
+                {
+                    <CaseInvoices CaseId="CaseId" />
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int CaseId { get; set; }
+
+    private Case? CaseItem { get; set; }
+    private string ActiveTab { get; set; } = "tasks";
+
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadCaseData();
+    }
+
+    private async Task LoadCaseData()
+    {
+        var response = await Http.GetAsync($"/api/Cases/{CaseId}");
+        if (response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            CaseItem = System.Text.Json.JsonSerializer.Deserialize<Case>(content, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        }
+    }
+
+    private string GetTabClass(string tabName)
+    {
+        return ActiveTab == tabName ? "active" : "";
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/client");
+    }
+}
