@@ -1,4 +1,7 @@
-﻿@inject NavigationManager Navigation
+﻿@using LegalCaseManagementSystem_FrontEnd.Services
+@rendermode InteractiveServer
+@inject AuthService AuthService
+@inject NavigationManager Navigation
 
 <nav class="navbar navbar-expand navbar-dark topbar fixed-top">
     <div class="container-fluid">
@@ -16,12 +19,9 @@
             <ul class="navbar-nav ms-auto">
                 <!-- User profile -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link" @onclick="ToggleDropdown" @onclick:stopPropagation role="button">
-                        <img src="/images/profile.png" alt="User" class="rounded-circle">
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-end @(isDropdownOpen ? "show" : "")" @onclick:stopPropagation>
-                        <a class="dropdown-item" @onclick="Logout"><i class="zmdi zmdi-power"></i> Logout</a>
-                    </div>
+                    <button class="btn btn-link nav-link text-white" @onclick="Logout">
+                        <i class="zmdi zmdi-power"></i> Logout
+                    </button>
                 </li>
             </ul>
         </div>
@@ -44,7 +44,8 @@
 
     private void Logout()
     {
-        isDropdownOpen = false; 
-        Navigation.NavigateTo("/login");
+        isDropdownOpen = false;
+        AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login", forceLoad: true);
     }
 }
