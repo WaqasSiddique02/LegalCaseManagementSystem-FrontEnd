@@ -1,6 +1,12 @@
-﻿@page "/takecase"
-<h3>TakeCase</h3>
+﻿@page "/fettch"
+@inject NavigationManager NavigationManager
+
+<h3>Testing Navigation</h3>
+<div class="btn" @onclick="NavigateToClient">Navigate</div>
 
 @code {
-
+    public void NavigateToClient()
+    {
+        NavigationManager.NavigateTo("/cases");
+    }
 }

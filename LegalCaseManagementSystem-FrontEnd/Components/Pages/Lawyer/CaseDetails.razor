@@ -1,0 +1,413 @@
+﻿@using LegalCaseManagementSystem_FrontEnd.Models
+@using LegalCaseManagementSystem_FrontEnd.Services
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+
+<LoadingAndError>
+    @if (Case != null)
+    {
+        <div class="case-details-container">
+            <div class="case-header">
+                <div class="case-title-section">
+                    <h2>@Case.Title</h2>
+                    <div class="case-meta">
+                        <span class="case-status @GetStatusClass(Case.Status)">@Case.Status.ToString()</span>
+                        <span class="case-id">Case ID: @Case.CaseId</span>
+                    </div>
+                </div>
+                <div class="case-actions">
+                    <button class="btn btn-primary" @onclick="GoBack">
+                        <i class="fas fa-arrow-left"></i> Back to Cases
+                    </button>
+                    <button class="btn btn-outline-primary" @onclick="() => EditCase(Case.CaseId)">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                </div>
+            </div>
+
+            <div class="case-content-grid">
+                <!-- Main Case Info -->
+                <div class="case-info-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-info-circle"></i> Case Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-row">
+                            <span class="info-label">Description:</span>
+                            <span class="info-value">@Case.Description</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Start Date:</span>
+                            <span class="info-value">@Case.StartDate.ToString("dd MMM yyyy")</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">End Date:</span>
+                            <span class="info-value">@(Case.EndDate?.ToString("dd MMM yyyy") ?? "Ongoing")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Client Info -->
+                <div class="case-info-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-user"></i> Client Information</h3>
+                    </div>
+                    <div class="card-body">
+                        @if (Case.Client != null)
+                        {
+                            <div class="info-row">
+                                <span class="info-label">Name:</span>
+                                <span class="info-value">@Case.Client.FullName</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Contact:</span>
+                                @* <span class="info-value">@(Case.Client.Email ?? "Not available")</span> *@
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="no-info">
+                                <i class="fas fa-user-slash"></i>
+                                <p>No client assigned</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Lawyer Info -->
+                <div class="case-info-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-gavel"></i> Assigned Lawyer</h3>
+                    </div>
+                    <div class="card-body">
+                        @if (Case.Lawyer != null)
+                        {
+                            <div class="info-row">
+                                <span class="info-label">Name:</span>
+                                <span class="info-value">@Case.Lawyer.FullName</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Specialization:</span>
+                                <span class="info-value">@Case.Lawyer.Specialization</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="no-info">
+                                <i class="fas fa-user-tie"></i>
+                                <p>No lawyer assigned</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="case-tabs">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="tasks-tab" data-toggle="tab" href="#tasks" role="tab" aria-controls="tasks" aria-selected="true">
+                                <i class="fas fa-tasks"></i> Tasks
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="hearings-tab" data-toggle="tab" href="#hearings" role="tab" aria-controls="hearings" aria-selected="false">
+                                <i class="fas fa-gavel"></i> Hearings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="documents-tab" data-toggle="tab" href="#documents" role="tab" aria-controls="documents" aria-selected="false">
+                                <i class="fas fa-file-alt"></i> Documents
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+                        <!-- Tasks Tab -->
+                        <div class="tab-pane fade show active" id="tasks" role="tabpanel" aria-labelledby="tasks-tab">
+                            <div class="tab-header">
+                                <h4>Case Tasks</h4>
+                                <button class="btn btn-sm btn-primary" @onclick="AddNewTask">
+                                    <i class="fas fa-plus"></i> Add Task
+                                </button>
+                            </div>
+                            @if (Case.CaseTasks?.Any() ?? false)
+                            {
+                                <div class="task-list">
+                                    @foreach (var task in Case.CaseTasks)
+                                    {
+                                        <div class="task-item @(task.Status == "Completed" ? "completed" : "")">
+                                            <div class="task-checkbox" @onclick="() => ToggleTaskCompletion(task)">
+                                                <i class="@(task.Status == "Completed" ? "fas fa-check-circle" : "far fa-circle")"></i>
+                                            </div>
+                                            <div class="task-content">
+                                                <h5>@task.Title</h5>
+                                                @if (!string.IsNullOrEmpty(task.Description))
+                                                {
+                                                    <p>@task.Description</p>
+                                                }
+                                                <div class="task-meta">
+                                                    <span class="task-status @(task.Status == "Completed" ? "completed" : "pending")">
+                                                        @task.Status
+                                                    </span>
+                                                    <span class="task-date">
+                                                        Created: @task.CreatedAt.ToString("dd MMM yyyy")
+                                                    </span>
+                                                    @if (task.CompletedAt.HasValue)
+                                                    {
+                                                        <span class="task-date">
+                                                            Completed: @task.CompletedAt.Value.ToString("dd MMM yyyy")
+                                                        </span>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <div class="task-actions">
+                                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditTask(task)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="no-items">
+                                    <i class="fas fa-tasks"></i>
+                                    <p>No tasks created for this case</p>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Hearings Tab -->
+                        <div class="tab-pane fade" id="hearings" role="tabpanel" aria-labelledby="hearings-tab">
+                            <div class="tab-header">
+                                <h4>Case Hearings</h4>
+                                <button class="btn btn-sm btn-primary" @onclick="AddNewHearing">
+                                    <i class="fas fa-plus"></i> Schedule Hearing
+                                </button>
+                            </div>
+                            @if (Case.Hearings?.Any() ?? false)
+                            {
+                                <div class="hearing-list">
+                                    @foreach (var hearing in Case.Hearings.OrderBy(h => h.HearingDate))
+                                    {
+                                        <div class="hearing-item @(hearing.HearingDate < DateTime.Now ? "past" : "upcoming")">
+                                            <div class="hearing-date">
+                                                <div class="hearing-day">@hearing.HearingDate.ToString("dd")</div>
+                                                <div class="hearing-month">@hearing.HearingDate.ToString("MMM")</div>
+                                            </div>
+                                            <div class="hearing-details">
+                                                <h5>@hearing.Venue</h5>
+                                                <div class="hearing-time">
+                                                    <i class="fas fa-clock"></i>
+                                                    @hearing.HearingDate.ToString("h:mm tt")
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(hearing.Outcome))
+                                                {
+                                                    <div class="hearing-outcome">
+                                                        <strong>Outcome:</strong> @hearing.Outcome
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div class="hearing-actions">
+                                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditHearing(hearing)">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="no-items">
+                                    <i class="fas fa-gavel"></i>
+                                    <p>No hearings scheduled for this case</p>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Documents Tab -->
+                        <div class="tab-pane fade" id="documents" role="tabpanel" aria-labelledby="documents-tab">
+                            <div class="tab-header">
+                                <h4>Case Documents</h4>
+                                <button class="btn btn-sm btn-primary" @onclick="AddNewDocument">
+                                    <i class="fas fa-plus"></i> Upload Document
+                                </button>
+                            </div>
+                            @if (Case.Documents?.Any() ?? false)
+                            {
+                                <div class="document-list">
+                                    @foreach (var document in Case.Documents)
+                                    {
+                                        <div class="document-item">
+                                            <div class="document-icon">
+                                                <i class="fas fa-file-alt"></i>
+                                            </div>
+                                            <div class="document-details">
+                                                <h5>@document.Title</h5>
+                                                <div class="document-meta">
+                                                    <span class="document-date">
+                                                        Uploaded: @document.UploadedAt.ToString("dd MMM yyyy")
+                                                    </span>
+                                                    @* <span class="document-size"> *@
+                                                    @*     @(document.FileSize > 0 ? (document.FileSize / 1024) + " KB" : "Size unknown") *@
+                                                    @* </span> *@
+                                                </div>
+                                            </div>
+                                            <div class="document-actions">
+                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => DownloadDocument(document)">
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ViewDocument(document)">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="no-items">
+                                    <i class="fas fa-file-alt"></i>
+                                    <p>No documents uploaded for this case</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="case-not-found">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Case not found</h3>
+            <p>We couldn't find the case you're looking for.</p>
+            <button class="btn btn-primary" @onclick="GoBack">
+                <i class="fas fa-arrow-left"></i> Back to Cases
+            </button>
+        </div>
+    }
+</LoadingAndError>
+
+@code {
+    [Parameter]
+    public int CaseId { get; set; }
+
+    [Parameter]
+    public Case? Case { get; set; }
+
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Case == null && CaseId > 0)
+        {
+            await LoadCase();
+        }
+    }
+
+    private async Task LoadCase()
+    {
+        try
+        {
+            var response = await Http.GetAsync($"/api/Cases/{CaseId}");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                Case = System.Text.Json.JsonSerializer.Deserialize<Case>(content, new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading case: {ex.Message}");
+        }
+    }
+
+    private string GetStatusClass(CaseStatus status)
+    {
+        return status switch
+        {
+            CaseStatus.Open => "status-open",
+            CaseStatus.Closed => "status-closed",
+            CaseStatus.Pending => "status-pending",
+            _ => string.Empty
+        };
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/lawyer");
+    }
+
+    private void EditCase(int caseId)
+    {
+        Navigation.NavigateTo($"/cases/{caseId}/edit");
+    }
+
+    private void AddNewTask()
+    {
+        Navigation.NavigateTo($"/cases/{CaseId}/tasks/new");
+    }
+
+    private void EditTask(CaseTask task)
+    {
+        Navigation.NavigateTo($"/cases/{CaseId}/tasks/{task.TaskId}/edit");
+    }
+
+    private async Task ToggleTaskCompletion(CaseTask task)
+    {
+        try
+        {
+            var updatedTask = new
+            {
+                Title = task.Title,
+                Description = task.Description,
+                Status = task.Status == "Completed" ? "Pending" : "Completed"
+            };
+
+            var response = await Http.PutAsJsonAsync($"/api/cases/{task.CaseId}/CaseTasks/{task.TaskId}", updatedTask);
+            if (response.IsSuccessStatusCode)
+            {
+                task.Status = updatedTask.Status;
+                task.CompletedAt = task.Status == "Completed" ? DateTime.Now : null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating task: {ex.Message}");
+        }
+    }
+
+    private void AddNewHearing()
+    {
+        Navigation.NavigateTo($"/cases/{CaseId}/hearings/new");
+    }
+
+    private void EditHearing(Hearing hearing)
+    {
+        Navigation.NavigateTo($"/cases/{CaseId}/hearings/{hearing.HearingId}/edit");
+    }
+
+    private void AddNewDocument()
+    {
+        Navigation.NavigateTo($"/cases/{CaseId}/documents/new");
+    }
+
+    private void ViewDocument(Document document)
+    {
+        // Implement document viewing logic
+    }
+
+    private void DownloadDocument(Document document)
+    {
+        // Implement document download logic
+    }
+}

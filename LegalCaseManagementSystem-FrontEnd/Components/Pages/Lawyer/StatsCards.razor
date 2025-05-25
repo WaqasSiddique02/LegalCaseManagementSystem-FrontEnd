@@ -33,7 +33,7 @@
             <i class="fas fa-calendar-alt"></i>
         </div>
         <div class="stat-info">
-            <h3>@DashboardState.UpcomingHearings.Count</h3>
+            <h3>@UpcomingHearingsCount</h3>
             <p>Upcoming Hearings</p>
             <span class="stat-trend negative">
                 <i class="fas fa-arrow-down"></i> @HearingsTrend%
@@ -55,18 +55,43 @@
 </div>
 
 @code {
-    private int ActiveCasesCount => DashboardState.Cases.Count(c => c.Status == CaseStatus.Open || c.Status == CaseStatus.Active || c.Status == CaseStatus.InProgress);
-    private int CompletedTasksCount => DashboardState.RecentTasks.Count(t => t.Status == "Completed");
-    private int PendingTasksCount => DashboardState.RecentTasks.Count(t => t.Status == "Pending");
+    // Count only cases assigned to this lawyer
+    private int ActiveCasesCount => DashboardState.Cases
+        .Where(c => c.LawyerId == DashboardState.LawyerId)
+        .Count(c => c.Status == CaseStatus.Open ||
+                   c.Status == CaseStatus.Active ||
+                   c.Status == CaseStatus.InProgress);
+
+    // Count only tasks from cases assigned to this lawyer
+    private int CompletedTasksCount => DashboardState.RecentTasks
+        .Where(t => DashboardState.Cases.Any(c =>
+            c.CaseId == t.CaseId &&
+            c.LawyerId == DashboardState.LawyerId))
+        .Count(t => t.Status == "Completed");
+
+    private int PendingTasksCount => DashboardState.RecentTasks
+        .Where(t => DashboardState.Cases.Any(c =>
+            c.CaseId == t.CaseId &&
+            c.LawyerId == DashboardState.LawyerId))
+        .Count(t => t.Status == "Pending");
+
+    // Count only hearings from cases assigned to this lawyer
+    private int UpcomingHearingsCount => DashboardState.UpcomingHearings
+        .Count(h => DashboardState.Cases.Any(c =>
+            c.CaseId == h.CaseId &&
+            c.LawyerId == DashboardState.LawyerId));
+
     private int ActiveCasesTrend => CalculateTrend(ActiveCasesCount);
     private int CompletedTasksTrend => CalculateTrend(CompletedTasksCount);
-    private int HearingsTrend => CalculateTrend(DashboardState.UpcomingHearings.Count);
+    private int HearingsTrend => CalculateTrend(UpcomingHearingsCount);
     private int PendingTasksTrend => CalculateTrend(PendingTasksCount);
 
     private int CalculateTrend(int currentCount)
     {
         // TODO: Implement logic to compare with previous data or return a default
-        return 0;
+        // For now, return a random trend for demonstration
+        var random = new Random();
+        return random.Next(1, 10);
     }
 
     protected override void OnInitialized()

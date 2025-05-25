@@ -77,7 +77,7 @@
                         Navigation.NavigateTo($"/client/{authResponse.UserId}");
                         break;
                     case "lawyer":
-                        Navigation.NavigateTo($"/lawyer-dashboard/{authResponse.UserId}");
+                        Navigation.NavigateTo($"/lawyer/{authResponse.UserId}");
                         break;
                     default:
                         errorMessage = "Unknown user role";

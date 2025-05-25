@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Components\Pages\Lawyer\Cases\" />
     <Folder Include="Components\Pages\Lawyer\Components\" />
     <Folder Include="wwwroot\css\Lawyer\" />
   </ItemGroup>
