@@ -8,6 +8,7 @@ namespace LegalCaseManagementSystem_FrontEnd.Services
     {
         public bool IsDarkMode { get; set; }
         public string? LawyerName { get; set; }
+        public int userId { get; set; }
         public int? LawyerId { get; set; }
         public List<Case> Cases { get; set; } = new();
         public List<Hearing> UpcomingHearings { get; set; } = new();
