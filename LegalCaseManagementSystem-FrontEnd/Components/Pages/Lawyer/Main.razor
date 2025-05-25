@@ -23,7 +23,7 @@
             <div class="header-actions">
                 <nav class="header-nav">
                     <a href="#dashboard" class="nav-link active">Dashboard</a>
-                    <a href="#cases" class="nav-link">Cases</a>
+                    <a href="@($"/lawyer/{userId}/cases")" class="nav-link">Cases</a>
                     <a href="#clients" class="nav-link">Clients</a>
                     <a href="#calendar" class="nav-link">Calendar</a>
                     <a href="#documents" class="nav-link">Documents</a>
@@ -31,17 +31,17 @@
 
                 <div class="action-buttons">
                     <button class="theme-toggle" @onclick="ToggleDarkMode">
-                        <i class="@(DashboardState.IsDarkMode )"></i>
+                        <i class="fas @(DashboardState.IsDarkMode ? "fa-sun" : "fa-moon")"></i>
                     </button>
 
                     <div class="user-dropdown">
                         <div class="user-avatar-container">
-                            <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName )&background=4e73df&color=fff"
+                            <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName ?? "Lawyer")&background=4e73df&color=fff"
                                  class="user-avatar" />
                             <span class="user-status"></span>
                         </div>
                         <div class="dropdown-menu">
-                            <a href="/profile-details/@UserId" class="dropdown-item">
+                            <a href="/profile-details/@userId" class="dropdown-item">
                                 <i class="fas fa-user"></i> My Profile
                             </a>
                             <a href="#" class="dropdown-item">
@@ -120,9 +120,9 @@
                     <h2>My Cases</h2>
                     <div class="case-controls">
                         <div class="case-count">Total: @lawyerCases.Count</div>
-                        <button class="btn btn-primary btn-sm" @onclick="@(() => NavigateToCases())" aria-label="View all cases">
+                        <NavLink class="btn btn-primary btn-sm" href="@($"/lawyer/{userId}/cases")" aria-label="View all cases">
                             <i class="fas fa-list"></i> View All Cases
-                        </button>
+                        </NavLink>
                     </div>
                 </div>
                 @if (DashboardState.IsLoading)
@@ -167,9 +167,9 @@
                                         <td>@caseItem.StartDate.ToString("dd MMM yyyy")</td>
                                         <td>@(caseItem.EndDate?.ToString("dd MMM yyyy") ?? "-")</td>
                                         <td>
-                                            <button class="btn btn-primary btn-sm" @onclick="() => ViewCaseDetails(caseItem.CaseId)">
+                                            <NavLink class="btn btn-primary btn-sm" href="@($"/lawyer/{userId}/cases/{caseItem.CaseId}")">
                                                 View Details
-                                            </button>
+                                            </NavLink>
                                         </td>
                                     </tr>
                                 }
@@ -185,11 +185,13 @@
                     </div>
                 }
             </div>
+    
+           
 
             <div class="hearings-card">
                 <div class="card-header">
                     <h3>Upcoming Hearings</h3>
-                    <NavLink class="btn btn-sm btn-primary" href="@($"/cases")">
+                    <NavLink class="btn btn-sm btn-primary" href="@($"/lawyer/{userId}/cases")">
                         View All
                     </NavLink>
                 </div>
@@ -327,7 +329,7 @@
     private List<DashboardState.Activity> recentActivities = new();
 
     [Parameter]
-    public int UserId { get; set; }
+    public int userId { get; set; }
 
     // Stats calculations
     private int ActiveCasesCount => lawyerCases.Count(c => c.Status == CaseStatus.Open || c.Status == CaseStatus.InProgress);
@@ -355,7 +357,7 @@
         try
         {
             // Get lawyer details
-            var lawyerResponse = await Http.GetAsync($"/api/Lawyers/{UserId}");
+            var lawyerResponse = await Http.GetAsync($"/api/Lawyers/{userId}");
             if (!lawyerResponse.IsSuccessStatusCode)
             {
                 DashboardState.ErrorMessage = $"Error loading lawyer details: {lawyerResponse.StatusCode}";
@@ -371,7 +373,7 @@
                         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
                     });
 
-            DashboardState.LawyerId = UserId;
+            DashboardState.LawyerId = userId;
             DashboardState.LawyerName = lawyer?.FullName ?? "Lawyer";
 
             // Get all cases
@@ -391,7 +393,7 @@
                         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
                     }) ?? new();
 
-            lawyerCases = allCases.Where(c => c.LawyerId == UserId).ToList();
+            lawyerCases = allCases.Where(c => c.LawyerId == userId).ToList();
             DashboardState.Cases = lawyerCases;
 
             foreach (var caseItem in lawyerCases)
@@ -464,7 +466,7 @@
     private void NavigateToCases()
     {
         DashboardState.Cases = lawyerCases;
-        Navigation.NavigateTo($"/lawyer/{UserId}/cases", forceLoad: true);
+        Navigation.NavigateTo($"/lawyer/{userId}/cases");
     }
 
     private List<DashboardState.Activity> GenerateRecentActivities()
@@ -539,7 +541,7 @@
                 Status = task.Status == "Completed" ? "Pending" : "Completed"
             };
 
-            var response = await Http.PutAsJsonAsync($"/api/cases/{task.CaseId}/CaseTasks/{task.TaskId}", updatedTask);
+            var response = await Http.PutAsJsonAsync($"/api/cases/{task.CaseId}/Tasks/{task.TaskId}", updatedTask);
 
             if (response.IsSuccessStatusCode)
             {
@@ -557,19 +559,12 @@
         }
     }
 
-    private void ViewCaseDetails(int caseId)
+    private async Task ViewCaseDetails(int caseId)
     {
-        Navigation.NavigateTo($"/cases/{caseId}", forceLoad: true);
+        Console.WriteLine($"ViewCase: Navigating to /lawyer/{userId}/cases/{caseId}");
+        await JSRuntime.InvokeVoidAsync("console.log", $"ViewCase: Navigating to /lawyer/{userId}/cases/{caseId}");
+        Navigation.NavigateTo($"/lawyer/{userId}/cases/{caseId}");
     }
-
-    // private void NavigateToCases()
-    // {
-    //     Navigation.NavigateTo("/cases", new NavigationOptions
-    //         {
-    //             ForceLoad = true
-    //         });
-
-    // }
 
     private string GetStatusClass(CaseStatus status)
     {
