@@ -1,0 +1,89 @@
+﻿/* Card Styles */
+.case-detail-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+    .case-detail-card:hover {
+        transform: translateY(-5px);
+    }
+
+.card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+    .card-header h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .card-header .text-muted {
+        font-size: 0.9rem;
+    }
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Tabs */
+.nav-tabs {
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.nav-item {
+    margin-right: 0.5rem;
+}
+
+.nav-link {
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s ease;
+}
+
+    .nav-link:hover,
+    .nav-link.active {
+        background-color: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+/* Case Info */
+.case-info .info-row,
+.client-info .info-row,
+.lawyer-info .info-row {
+    display: flex;
+    margin-bottom: 0.75rem;
+}
+
+.info-label {
+    font-weight: 600;
+    width: 150px;
+    color: var(--text-muted);
+}
+
+.info-value {
+    flex: 1;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+    .card-header h3 {
+        font-size: 1.25rem;
+    }
+
+    .nav-link {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+}

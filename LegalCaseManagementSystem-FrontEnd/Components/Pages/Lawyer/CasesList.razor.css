@@ -1,0 +1,125 @@
+﻿/* Override content-grid for case list */
+.content-grid {
+    grid-template-columns: 1fr;
+    padding: 2rem;
+}
+
+/* Management Actions */
+.management-actions {
+    margin-bottom: 2rem;
+}
+
+/* Case List Container */
+.case-list-container {
+    width: 90%;
+    margin: 0 auto;
+}
+
+/* Table Styles */
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+    .table th,
+    .table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .table th {
+        background-color: var(--gray-light);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+
+.dark-mode .table th {
+    background-color: var(--border-color);
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.table-responsive {
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+/* Badges */
+.badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.status-open {
+    background-color: rgba(78, 115, 223, 0.1);
+    color: var(--primary);
+}
+
+.status-completed {
+    background-color: rgba(28, 200, 138, 0.1);
+    color: var(--success);
+}
+
+.status-in-progress {
+    background-color: rgba(246, 194, 62, 0.1);
+    color: var(--warning);
+}
+
+/* No Cases */
+.no-cases {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+    .no-cases i {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.5;
+    }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .case-list-container {
+        width: 100%;
+    }
+
+    .table th,
+    .table td {
+        font-size: 0.85rem;
+        padding: 0.75rem;
+    }
+
+    .content-grid {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .table th,
+    .table td {
+        font-size: 0.8125rem;
+    }
+}
