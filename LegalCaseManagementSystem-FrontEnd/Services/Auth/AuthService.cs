@@ -61,6 +61,23 @@ namespace LegalCaseManagementSystem_FrontEnd.Services
             _httpClient.DefaultRequestHeaders.Authorization = null;
         }
 
+        public Task LogoutAsync()
+        {
+            ClearAuthToken();
+            return Task.CompletedTask;
+            // Uncomment the following if you have a server-side logout endpoint
+            /*
+            try
+            {
+                await _httpClient.PostAsync("/api/Auth/logout", null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Logout error: {ex.Message}");
+            }
+            */
+        }
+
         public string GetToken() => _token;
         public string GetRole() => _role;
         public int GetUserId() => _userId;
