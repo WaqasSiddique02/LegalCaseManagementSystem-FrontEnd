@@ -1,11 +1,13 @@
-﻿/* Top Navigation Bar Styling */
-.topbar {
+﻿.topbar {
     background-color: #1b2431;
     border-bottom: 1px solid #313d4f;
     height: 60px;
     padding: 0 1rem;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    position:fixed;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1030;
 }
 
     .topbar .navbar-brand {
@@ -20,7 +22,6 @@
             margin-right: 0.5rem;
         }
 
-/* Search bar styling */
 .search-bar {
     position: relative;
     width: 300px;
@@ -55,11 +56,11 @@
             box-shadow: none;
         }
 
-/* Nav items styling */
 .topbar .nav-link {
     color: #738297;
     padding: 0.5rem 1rem;
     position: relative;
+    cursor: pointer;
 }
 
     .topbar .nav-link:hover {
@@ -70,40 +71,38 @@
         font-size: 1.25rem;
     }
 
-.topbar .badge {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    font-size: 0.6rem;
-    padding: 0.25em 0.4em;
-}
-
-/* Dropdown menu styling */
 .topbar .dropdown-menu {
     background-color: #273142;
     border: 1px solid #313d4f;
     margin-top: 0;
+    display: none;
+    position: absolute;
+    min-width: 150px; 
+    max-width: 200px; 
+    right: 0;
+    left: auto; 
+    transform: translateX(0); 
+}
+
+    .topbar .dropdown-menu.show {
+        display: block;
+    }
+
+.topbar .dropdown-menu-end {
+    right: 0;
+    left: auto;
 }
 
 .topbar .dropdown-item {
     color: #fff;
     padding: 0.5rem 1.5rem;
+    cursor: pointer;
 }
 
     .topbar .dropdown-item:hover {
         background-color: #313d4f;
         color: #fff;
     }
-
-.topbar .dropdown-header {
-    color: #738297;
-    font-size: 0.75rem;
-    padding: 0.5rem 1.5rem;
-}
-
-.topbar .dropdown-divider {
-    border-color: #313d4f;
-}
 
 /* User profile image */
 .topbar img.rounded-circle {
@@ -130,5 +129,10 @@
 
     .topbar .navbar-brand span {
         display: none;
+    }
+
+    .topbar .dropdown-menu {
+        right: 1rem;
+        max-width: calc(100vw - 2rem);
     }
 }

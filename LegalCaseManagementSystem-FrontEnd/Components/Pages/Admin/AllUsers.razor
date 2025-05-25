@@ -59,6 +59,7 @@
                         <th scope="col">Username</th>
                         <th scope="col">Email</th>
                         <th scope="col">Role</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,10 +73,39 @@
                                     @user.Role
                                 </span>
                             </td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" title="Delete User" @onclick="() => ShowDeleteModal(user)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
                         </tr>
                     }
                 </tbody>
             </table>
+        </div>
+    }
+
+    <!-- Delete Confirmation Modal -->
+    @if (showDeleteModal)
+    {
+        <div class="modal-backdrop show"></div>
+        <div class="modal show d-block" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CloseDeleteModal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete user <strong>@currentUser.Username</strong>?</p>
+                        <p class="text-danger">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancel</button>
+                        <button type="button" class="btn btn-danger" @onclick="DeleteUser">Delete</button>
+                    </div>
+                </div>
+            </div>
         </div>
     }
 </div>
@@ -87,6 +117,8 @@
     private string selectedRole = string.Empty;
     private bool isLoading = false;
     private string? errorMessage;
+    private bool showDeleteModal = false;
+    private User currentUser = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -138,6 +170,45 @@
         finally
         {
             isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowDeleteModal(User user)
+    {
+        currentUser = user;
+        showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        currentUser = new();
+    }
+
+    private async Task DeleteUser()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"/api/Users/{currentUser.UserId}");
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadUsers();
+                showDeleteModal = false;
+            }
+            else
+            {
+                errorMessage = $"Error deleting user: {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception deleting user: {ex.Message}";
+        }
+        finally
+        {
+            showDeleteModal = false;
+            currentUser = new();
             StateHasChanged();
         }
     }

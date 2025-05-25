@@ -1,32 +1,50 @@
-﻿<nav class="navbar navbar-expand navbar-dark topbar fixed-top">
+﻿@inject NavigationManager Navigation
+
+<nav class="navbar navbar-expand navbar-dark topbar fixed-top">
     <div class="container-fluid">
-        <!-- Brand/logo and toggle button (for mobile) -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topbarNav">
+        <button class="navbar-toggler" type="button" @onclick="ToggleNavbar" aria-controls="topbarNav" aria-expanded="@isNavbarExpanded" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
         <a class="navbar-brand">
-            <img src="/images/weightscale.png"
-                 alt="Weight Scale Logo" height="50" width="50" style="margin-right:5px"; >
+            <img src="/images/weightscale.png" alt="Weight Scale Logo" height="50" width="50" style="margin-right:5px;">
             <span>The Legals</span>
         </a>
 
-
-        <!-- Right side items -->
-        <ul class="navbar-nav ms-auto">
-            <!-- User profile -->
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                    <img src="/images/profile.png" alt="User" class="rounded-circle">
-                    <span class="ms-2 d-none d-lg-inline">Waqas</span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-end">
-                    <a class="dropdown-item" href="#"><i class="zmdi zmdi-account"></i> Profile</a>
-                    <a class="dropdown-item" href="#"><i class="zmdi zmdi-settings"></i> Settings</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="#"><i class="zmdi zmdi-power"></i> Logout</a>
-                </div>
-            </li>
-        </ul>
+        <div class="collapse navbar-collapse @(!isNavbarExpanded ? "collapse" : "")" id="topbarNav">
+            <!-- Right side items -->
+            <ul class="navbar-nav ms-auto">
+                <!-- User profile -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link" @onclick="ToggleDropdown" @onclick:stopPropagation role="button">
+                        <img src="/images/profile.png" alt="User" class="rounded-circle">
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end @(isDropdownOpen ? "show" : "")" @onclick:stopPropagation>
+                        <a class="dropdown-item" @onclick="Logout"><i class="zmdi zmdi-power"></i> Logout</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
     </div>
 </nav>
+
+@code {
+    private bool isDropdownOpen = false;
+    private bool isNavbarExpanded = false;
+
+    private void ToggleDropdown()
+    {
+        isDropdownOpen = !isDropdownOpen;
+    }
+
+    private void ToggleNavbar()
+    {
+        isNavbarExpanded = !isNavbarExpanded;
+    }
+
+    private void Logout()
+    {
+        isDropdownOpen = false; 
+        Navigation.NavigateTo("/login");
+    }
+}
