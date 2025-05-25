@@ -467,23 +467,8 @@
         Navigation.NavigateTo($"/client/{UserId}/invoices/{invoiceId}");
     }
 
-    private async Task PayInvoice(int invoiceId)
+    private void PayInvoice(int invoiceId)
     {
-        try
-        {
-            var response = await Http.PutAsync($"/api/cases/invoices/{invoiceId}/pay", null);
-            if (response.IsSuccessStatusCode)
-            {
-                await OnInitializedAsync();
-            }
-            else
-            {
-                errorMessage = "Failed to process payment";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Payment error: {ex.Message}";
-        }
+        Navigation.NavigateTo($"/client/{UserId}/invoices/{invoiceId}/pay");
     }
 }

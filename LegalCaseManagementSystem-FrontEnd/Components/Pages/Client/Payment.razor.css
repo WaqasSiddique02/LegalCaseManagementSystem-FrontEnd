@@ -1,0 +1,36 @@
+﻿.payment-details p {
+    margin: 0.5rem 0;
+    color: var(--text-secondary, #6c757d);
+}
+
+.dark-mode .payment-details p {
+    color: var(--text-secondary-dark, #d1d1d1);
+}
+
+.badge {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 12px;
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.header-brand {
+    flex: 1;
+}
+
+.header-left {
+    flex: 2;
+    text-align: center;
+}
+
+.header-actions {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+}

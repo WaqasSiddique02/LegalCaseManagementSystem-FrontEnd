@@ -1,114 +1,381 @@
-﻿@page "/client/cases/{CaseId:int}"
+﻿@page "/client/{userId:int}/cases/{caseId:int}"
 @using LegalCaseManagementSystem_FrontEnd.Models
-@using LegalCaseManagementSystem_FrontEnd.Services
+@using System.Text.Json.Serialization
+@using System.Text.Json
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
+@rendermode InteractiveServer
 
-<div class="case-detail-container">
-    <div class="case-header">
-        <button class="btn btn-back" @onclick="NavigateBack">
-            <i class="fas fa-arrow-left"></i> Back to Cases
-        </button>
-        <h2>@CaseItem?.Title</h2>
-        <div class="case-status @CaseItem?.Status.ToString().ToLower()">
-            @CaseItem?.Status
+<div class="dashboard @(isDarkMode ? "dark-mode" : "")">
+    <header class="dashboard-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <img src="/images/law.png" alt="Client Portal Logo" class="brand-logo" />
+                <div class="brand-text">
+                    <h1>Client Portal <span class="pro-badge">PRO</span></h1>
+                    <p class="brand-tagline">Legal Support • Client Services</p>
+                </div>
+            </div>
+
+            <div class="header-left">
+                <h1>Case Details</h1>
+                <p class="text-muted">Welcome back, @user?.Username</p>
+            </div>
+
+            <div class="header-actions">
+                <div class="action-buttons">
+                    <button class="theme-toggle" @onclick="ToggleDarkMode">
+                        <i class="fas @(isDarkMode ? "fa-sun" : "fa-moon")"></i>
+                    </button>
+
+                    <div class="user-dropdown">
+                        <div class="user-avatar-container">
+                            <img src="https://ui-avatars.com/api/?name=@("J")&background=4e73df&color=fff"
+                                 class="user-avatar" />
+                            <span class="user-status"></span>
+                        </div>
+                        <div class="dropdown-menu">
+                            <a href="/client/profile/@UserId" class="dropdown-item">
+                                <i class="fas fa-user"></i> My Profile
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/logout" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
-    </div>
+    </header>
 
-    <div class="case-description">
-        <h3>Description</h3>
-        <p>@CaseItem?.Description</p>
-    </div>
+    <div class="dashboard-grid">
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else if (errorMessage != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                @errorMessage
+            </div>
+        }
+        else
+        {
+            <div class="content-card">
+                <div class="card-header">
+                    <h3>Case Details</h3>
+                    <a href="/client/@UserId/cases" class="btn btn-primary btn-sm">Back to Cases</a>
+                </div>
+                <div class="card-body">
+                    @if (caseItem != null)
+                    {
+                        <div class="case-detail">
+                            <div class="case-detail-header">
+                                <h4>@caseItem.Title</h4>
+                                <span class="badge @GetStatusBadgeClass(caseItem.Status)">
+                                    @caseItem.Status
+                                </span>
+                            </div>
+                            <div class="case-detail-body">
+                                <div class="detail-section">
+                                    <h5>Case Information</h5>
+                                    <div class="detail-item">
+                                        <strong>Title:</strong>
+                                        <span>@caseItem.Title</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Lawyer:</strong>
+                                        <span>@(lawyer?.FullName ?? "Not assigned")</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Start Date:</strong>
+                                        <span>@caseItem.StartDate.ToString("MMMM dd, yyyy")</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Status:</strong>
+                                        <span>@caseItem.Status</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Description:</strong>
+                                        <span>@(caseItem.Description ?? "No description available")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info" role="alert">
+                            Case not found
+                        </div>
+                    }
+                </div>
+            </div>
 
-    <div class="case-details-grid">
-        <div class="case-info">
-            <h3>Case Information</h3>
-            <div class="detail-row">
-                <span class="detail-label">Case ID:</span>
-                <span class="detail-value">@CaseItem?.CaseId</span>
+            <div class="content-card">
+                <div class="card-header">
+                    <h3>Related Hearings</h3>
+                    <a href="/client/@UserId/hearings" class="btn btn-primary btn-sm">View All Hearings</a>
+                </div>
+                <div class="card-body">
+                    @if (hearings.Any())
+                    {
+                        <div class="hearing-list">
+                            @foreach (var hearing in hearings.OrderBy(h => h.HearingDate))
+                            {
+                                <div class="hearing-item">
+                                    <div class="hearing-date">
+                                        <span class="day">@hearing.HearingDate.Day</span>
+                                        <span class="month">@hearing.HearingDate.ToString("MMM")</span>
+                                    </div>
+                                    <div class="hearing-info">
+                                        <h4>Hearing on @hearing.HearingDate.ToString("MMMM dd, yyyy")</h4>
+                                        <p><i class="fas fa-clock"></i> @hearing.HearingDate.ToString("h:mm tt")</p>
+                                        <p><i class="fas fa-map-marker-alt"></i> @hearing.Venue</p>
+                                        <div class="hearing-actions">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewHearing(hearing.HearingId)">
+                                                <i class="fas fa-eye"></i> View Details
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info" role="alert">
+                            No hearings found for this case
+                        </div>
+                    }
+                </div>
             </div>
-            <div class="detail-row">
-                <span class="detail-label">Opened Date:</span>
-                <span class="detail-value">@CaseItem?.StartDate.ToString("MMM dd, yyyy")</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Assigned Lawyer:</span>
-                <span class="detail-value">@CaseItem?.Lawyer?.FullName</span>
-            </div>
-        </div>
 
-        <div class="case-tabs">
-            <div class="tabs-header">
-                <button class="@GetTabClass("tasks")" @onclick='() => ActiveTab = "tasks"'>
-                    <i class="fas fa-tasks"></i> Tasks
-                </button>
-                <button class="@GetTabClass("hearings")" @onclick='() => ActiveTab = "hearings"'>
-                    <i class="fas fa-calendar-alt"></i> Hearings
-                </button>
-                <button class="@GetTabClass("documents")" @onclick='() => ActiveTab = "documents"'>
-                    <i class="fas fa-file-alt"></i> Documents
-                </button>
-                <button class="@GetTabClass("invoices")" @onclick='() => ActiveTab = "invoices"'>
-                    <i class="fas fa-file-invoice-dollar"></i> Invoices
-                </button>
+            <div class="content-card">
+                <div class="card-header">
+                    <h3>Related Invoices</h3>
+                    <a href="/client/@UserId/invoices" class="btn btn-primary btn-sm">View All Invoices</a>
+                </div>
+                <div class="card-body">
+                    @if (invoices.Any())
+                    {
+                        <div class="invoice-grid">
+                            @foreach (var invoice in invoices.OrderByDescending(i => i.IssuedDate))
+                            {
+                                <div class="invoice-card">
+                                    <div class="invoice-card-header">
+                                        <h4>Invoice #@invoice.InvoiceId</h4>
+                                        <span class="badge @GetInvoiceStatusBadge(invoice.Status)">
+                                            @invoice.Status
+                                        </span>
+                                    </div>
+                                    <div class="invoice-card-body">
+                                        <div class="invoice-info">
+                                            <p><strong>Amount:</strong> @invoice.Amount.ToString("C")</p>
+                                            <p><strong>Issued Date:</strong> @invoice.IssuedDate.ToString("MMM dd, yyyy")</p>
+                                        </div>
+                                        <div class="invoice-actions">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewInvoice(invoice.InvoiceId)">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            @if (invoice.Status == "Unpaid")
+                                            {
+                                                <button class="btn btn-sm btn-success ms-2" @onclick="() => PayInvoice(invoice.InvoiceId)">
+                                                    <i class="fas fa-credit-card"></i> Pay
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info" role="alert">
+                            No invoices found for this case
+                        </div>
+                    }
+                </div>
             </div>
 
-            <div class="tabs-content">
-                @if (ActiveTab == "tasks")
-                {
-                    <CaseTasks CaseId="CaseId" />
-                }
-                else if (ActiveTab == "hearings")
-                {
-                    <CaseHearings CaseId="CaseId" />
-                }
-                else if (ActiveTab == "documents")
-                {
-                    <CaseDocuments CaseId="CaseId" />
-                }
-                else if (ActiveTab == "invoices")
-                {
-                    <CaseInvoices CaseId="CaseId" />
-                }
+            <div class="content-card">
+                <div class="card-header">
+                    <h3>Related Documents</h3>
+                </div>
+                <div class="card-body">
+                    @if (documents.Any())
+                    {
+                        <div class="document-list">
+                            @foreach (var document in documents.OrderBy(d => d.UploadedAt))
+                            {
+                                <div class="document-item">
+                                    <div class="document-info">
+                                        <h4>@document.Title</h4>
+                                        <p><i class="fas fa-calendar"></i> Uploaded: @document.UploadedAt.ToString("MMM dd, yyyy")</p>
+                                    </div>
+                                    <div class="document-actions">
+                                        <a href="@document.FilePath" class="btn btn-sm btn-outline-primary" target="_blank">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info" role="alert">
+                            No documents found for this case
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
+        }
     </div>
 </div>
 
 @code {
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+
+    [Parameter]
+    public int UserId { get; set; }
+
     [Parameter]
     public int CaseId { get; set; }
 
-    private Case? CaseItem { get; set; }
-    private string ActiveTab { get; set; } = "tasks";
+    private User? user;
+    private Case? caseItem;
+    private Lawyer? lawyer;
+    private List<Hearing> hearings = new();
+    private List<Invoice> invoices = new();
+    private List<Document> documents = new();
+    private bool isDarkMode = false;
+    private bool isLoading = true;
+    private string? errorMessage;
 
-    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
-
-    protected override async Task OnParametersSetAsync()
-    {
-        await LoadCaseData();
-    }
-
-    private async Task LoadCaseData()
-    {
-        var response = await Http.GetAsync($"/api/Cases/{CaseId}");
-        if (response.IsSuccessStatusCode)
+    private static readonly JsonSerializerOptions jsonOptions = new()
         {
-            var content = await response.Content.ReadAsStringAsync();
-            CaseItem = System.Text.Json.JsonSerializer.Deserialize<Case>(content, new System.Text.Json.JsonSerializerOptions
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
+            if (!userResponse.IsSuccessStatusCode)
             {
-                PropertyNameCaseInsensitive = true
-            });
+                errorMessage = $"Error loading user: {userResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
+
+            var caseResponse = await Http.GetAsync($"/api/Cases/{CaseId}");
+            if (!caseResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading case: {caseResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            caseItem = await caseResponse.Content.ReadFromJsonAsync<Case>(jsonOptions);
+
+            if (caseItem != null && caseItem.LawyerId > 0)
+            {
+                var lawyerResponse = await Http.GetAsync($"/api/Lawyers/{caseItem.LawyerId}");
+                if (lawyerResponse.IsSuccessStatusCode)
+                {
+                    lawyer = await lawyerResponse.Content.ReadFromJsonAsync<Lawyer>(jsonOptions);
+                }
+            }
+
+            var hearingsResponse = await Http.GetAsync($"/api/cases/{CaseId}/Hearings");
+            if (hearingsResponse.IsSuccessStatusCode)
+            {
+                hearings = await hearingsResponse.Content.ReadFromJsonAsync<List<Hearing>>(jsonOptions) ?? new List<Hearing>();
+            }
+
+            var invoicesResponse = await Http.GetAsync($"/api/cases/{CaseId}/Invoices");
+            if (invoicesResponse.IsSuccessStatusCode)
+            {
+                invoices = await invoicesResponse.Content.ReadFromJsonAsync<List<Invoice>>(jsonOptions) ?? new List<Invoice>();
+            }
+
+            var documentsResponse = await Http.GetAsync($"/api/cases/{CaseId}/Documents");
+            if (documentsResponse.IsSuccessStatusCode)
+            {
+                documents = await documentsResponse.Content.ReadFromJsonAsync<List<Document>>(jsonOptions) ?? new List<Document>();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
-    private string GetTabClass(string tabName)
+    private string GetStatusBadgeClass(CaseStatus status)
     {
-        return ActiveTab == tabName ? "active" : "";
+        return status switch
+        {
+            CaseStatus.Open => "bg-primary",
+            CaseStatus.Closed => "bg-secondary",
+            CaseStatus.Pending => "bg-warning",
+            CaseStatus.Active => "bg-success",
+            CaseStatus.Completed => "bg-info",
+            CaseStatus.InProgress => "bg-primary",
+            _ => "bg-light text-dark"
+        };
     }
 
-    private void NavigateBack()
+    private string GetInvoiceStatusBadge(string status)
     {
-        Navigation.NavigateTo("/client");
+        return status switch
+        {
+            "Paid" => "bg-success",
+            "Unpaid" => "bg-danger",
+            "Pending" => "bg-warning",
+            "Partial" => "bg-info",
+            _ => "bg-secondary"
+        };
+    }
+
+    private async Task ToggleDarkMode()
+    {
+        isDarkMode = !isDarkMode;
+        StateHasChanged();
+    }
+
+    private void ViewHearing(int hearingId)
+    {
+        Navigation.NavigateTo($"/client/{UserId}/hearings/{CaseId}/{hearingId}");
+    }
+
+    private void ViewInvoice(int invoiceId)
+    {
+        Navigation.NavigateTo($"/client/{UserId}/invoices/{invoiceId}");
+    }
+
+    private void PayInvoice(int invoiceId)
+    {
+        Navigation.NavigateTo($"/client/{UserId}/invoices/{invoiceId}/pay");
     }
 }

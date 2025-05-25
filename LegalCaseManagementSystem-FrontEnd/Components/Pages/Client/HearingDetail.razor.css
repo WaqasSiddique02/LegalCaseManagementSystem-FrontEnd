@@ -1,0 +1,89 @@
+﻿
+.hearing-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.hearing-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+    .hearing-detail-header h4 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+.hearing-detail-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.detail-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+    .detail-section h5 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+.detail-item {
+    display: flex;
+    gap: 1rem;
+    padding: 0.5rem 0;
+}
+
+    .detail-item strong {
+        flex: 0 0 100px;
+        color: var(--text-secondary, #6c757d);
+    }
+
+    .detail-item span {
+        flex: 1;
+    }
+
+.dark-mode .detail-item strong {
+    color: var(--text-secondary-dark, #d1d1d1);
+}
+
+.dark-mode .content-card {
+    background: var(--card-bg-dark, #2c2c2c);
+    color: var(--text-dark-mode, #fff);
+}
+
+.badge {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 12px;
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.header-brand {
+    flex: 1;
+}
+
+.header-left {
+    flex: 2;
+    text-align: center;
+}
+
+.header-actions {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+}

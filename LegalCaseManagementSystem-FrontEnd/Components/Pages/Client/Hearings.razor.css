@@ -1,0 +1,71 @@
+﻿.hearing-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.hearing-item {
+    display: flex;
+    gap: 1rem;
+    background: var(--card-bg, #fff);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.hearing-date {
+    text-align: center;
+    min-width: 60px;
+}
+
+    .hearing-date .day {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    .hearing-date .month {
+        font-size: 0.9rem;
+        color: var(--text-secondary, #6c757d);
+    }
+
+.hearing-info h4 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.hearing-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.dark-mode .hearing-item {
+    background: var(--card-bg-dark, #2c2c2c);
+    color: var(--text-dark-mode, #fff);
+}
+
+.dark-mode .hearing-date .month {
+    color: var(--text-secondary-dark, #d1d1d1);
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.header-brand {
+    flex: 1;
+}
+
+.header-left {
+    flex: 2;
+    text-align: center;
+}
+
+.header-actions {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+}

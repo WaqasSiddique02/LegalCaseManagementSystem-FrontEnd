@@ -1,0 +1,241 @@
+﻿@page "/client/{userId:int}/hearings/{caseId:int}/{hearingId:int}"
+@using LegalCaseManagementSystem_FrontEnd.Models
+@using System.Text.Json.Serialization
+@using System.Text.Json
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<div class="dashboard @(isDarkMode ? "dark-mode" : "")">
+    <header class="dashboard-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <img src="/images/law.png" alt="Client Portal Logo" class="brand-logo" />
+                <div class="brand-text">
+                    <h1>Client Portal <span class="pro-badge">PRO</span></h1>
+                    <p class="brand-tagline">Legal Support • Client Services</p>
+                </div>
+            </div>
+
+            <div class="header-left">
+                <h1>Hearing Details</h1>
+                <p class="text-muted">Welcome back, @user?.Username</p>
+            </div>
+
+            <div class="header-actions">
+                <div class="action-buttons">
+                    <button class="theme-toggle" @onclick="ToggleDarkMode">
+                        <i class="fas @(isDarkMode ? "fa-sun" : "fa-moon")"></i>
+                    </button>
+
+                    <div class="user-dropdown">
+                        <div class="user-avatar-container">
+                            <img src="https://ui-avatars.com/api/?name=@("J")&background=4e73df&color=fff"
+                                 class="user-avatar" />
+                            <span class="user-status"></span>
+                        </div>
+                        <div class="dropdown-menu">
+                            <a href="/client/profile/@UserId" class="dropdown-item">
+                                <i class="fas fa-user"></i> My Profile
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/logout" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else if (errorMessage != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                @errorMessage
+            </div>
+        }
+        else
+        {
+            <div class="content-card">
+                <div class="card-header">
+                    <h3>Hearing Details</h3>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="/client/@UserId/hearings" class="btn btn-primary btn-sm">Back to Hearings</a>
+                        <a href="/client/@UserId/cases/@CaseId" class="btn btn-outline-primary btn-sm">View Case</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (hearing != null && caseItem != null)
+                    {
+                        <div class="hearing-detail">
+                            <div class="hearing-detail-header">
+                                <h4>@caseItem.Title</h4>
+                                <span class="badge @GetStatusBadgeClass(caseItem.Status)">
+                                    @caseItem.Status
+                                </span>
+                            </div>
+                            <div class="hearing-detail-body">
+                                <div class="detail-section">
+                                    <h5>Hearing Information</h5>
+                                    <div class="detail-item">
+                                        <strong>Date:</strong>
+                                        <span>@hearing.HearingDate.ToString("MMMM dd, yyyy")</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Time:</strong>
+                                        <span>@hearing.HearingDate.ToString("h:mm tt")</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Venue:</strong>
+                                        <span>@hearing.Venue</span>
+                                    </div>
+                          
+                                </div>
+                                <div class="detail-section">
+                                    <h5>Case Information</h5>
+                                    <div class="detail-item">
+                                        <strong>Title:</strong>
+                                        <span>@caseItem.Title</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Lawyer:</strong>
+                                        <span>@(lawyer?.FullName ?? "Not assigned")</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Start Date:</strong>
+                                        <span>@caseItem.StartDate.ToString("MMMM dd, yyyy")</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Status:</strong>
+                                        <span>@caseItem.Status</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info" role="alert">
+                            Hearing or case not found
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+
+    [Parameter]
+    public int UserId { get; set; }
+
+    [Parameter]
+    public int CaseId { get; set; }
+
+    [Parameter]
+    public int HearingId { get; set; }
+
+    private User? user;
+    private Case? caseItem;
+    private Hearing? hearing;
+    private Lawyer? lawyer;
+    private bool isDarkMode = false;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
+            if (!userResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading user: {userResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
+
+            var caseResponse = await Http.GetAsync($"/api/Cases/{CaseId}");
+            if (!caseResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading case: {caseResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            caseItem = await caseResponse.Content.ReadFromJsonAsync<Case>(jsonOptions);
+
+            var hearingResponse = await Http.GetAsync($"/api/cases/{CaseId}/Hearings/{HearingId}");
+            if (!hearingResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading hearing: {hearingResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            hearing = await hearingResponse.Content.ReadFromJsonAsync<Hearing>(jsonOptions);
+
+            if (caseItem != null && caseItem.LawyerId > 0)
+            {
+                var lawyerResponse = await Http.GetAsync($"/api/Lawyers/{caseItem.LawyerId}");
+                if (lawyerResponse.IsSuccessStatusCode)
+                {
+                    lawyer = await lawyerResponse.Content.ReadFromJsonAsync<Lawyer>(jsonOptions);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetStatusBadgeClass(CaseStatus status)
+    {
+        return status switch
+        {
+            CaseStatus.Open => "bg-primary",
+            CaseStatus.Closed => "bg-secondary",
+            CaseStatus.Pending => "bg-warning",
+            CaseStatus.Active => "bg-success",
+            CaseStatus.Completed => "bg-info",
+            CaseStatus.InProgress => "bg-primary",
+            _ => "bg-light text-dark"
+        };
+    }
+
+    private async Task ToggleDarkMode()
+    {
+        isDarkMode = !isDarkMode;
+        StateHasChanged();
+    }
+}

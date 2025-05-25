@@ -1,0 +1,269 @@
+﻿@page "/client/{userId:int}/invoices"
+@using LegalCaseManagementSystem_FrontEnd.Models
+@using System.Text.Json.Serialization
+@using System.Text.Json
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<div class="dashboard @(isDarkMode ? "dark-mode" : "")">
+    <header class="dashboard-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <img src="/images/law.png" alt="Client Portal Logo" class="brand-logo" />
+                <div class="brand-text">
+                    <h1>Client Portal <span class="pro-badge">PRO</span></h1>
+                    <p class="brand-tagline">Legal Support • Client Services</p>
+                </div>
+            </div>
+
+            <div class="header-left">
+                <h1>Invoices</h1>
+                <p class="text-muted">Welcome back, @user?.Username</p>
+            </div>
+
+            <div class="header-actions">
+                <div class="action-buttons">
+                    <button class="theme-toggle" @onclick="ToggleDarkMode">
+                        <i class="fas @(isDarkMode ? "fa-sun" : "fa-moon")"></i>
+                    </button>
+
+                    <div class="user-dropdown">
+                        <div class="user-avatar-container">
+                            <img src="https://ui-avatars.com/api/?name=@("J")&background=4e73df&color=fff"
+                                 class="user-avatar" />
+                            <span class="user-status"></span>
+                        </div>
+                        <div class="dropdown-menu">
+                            <a href="/client/profile/@UserId" class="dropdown-item">
+                                <i class="fas fa-user"></i> My Profile
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="/logout" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else if (errorMessage != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                @errorMessage
+            </div>
+        }
+        else
+        {
+            <div class="content-card">
+                <div class="card-header">
+                    <h3>All Invoices</h3>
+                    <div class="d-flex align-items-center gap-2">
+                        <select class="form-select form-select-sm" @onchange="FilterInvoices">
+                            <option value="All">All</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Unpaid">Unpaid</option>
+                        </select>
+                        <a href="/client/@UserId" class="btn btn-primary btn-sm">Back to Dashboard</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (filteredInvoices.Any())
+                    {
+                        <div class="invoice-grid">
+                            @foreach (var invoice in filteredInvoices.OrderByDescending(i => i.IssuedDate))
+                            {
+                                <div class="invoice-card">
+                                    <div class="invoice-card-header">
+                                        <h4>Invoice #@invoice.InvoiceId</h4>
+                                        <span class="badge @GetInvoiceStatusBadge(invoice.Status)">
+                                            @invoice.Status
+                                        </span>
+                                    </div>
+                                    <div class="invoice-card-body">
+                                        <div class="invoice-info">
+                                            <p><strong>Case:</strong> @(cases.FirstOrDefault(c => c.CaseId == invoice.CaseId)?.Title ?? "Unknown")</p>
+                                            <p><strong>Amount:</strong> @invoice.Amount.ToString("C")</p>
+                                            <p><strong>Due Date:</strong> @invoice.IssuedDate.ToString("MMM dd, yyyy")</p>
+                                        </div>
+                                        <div class="invoice-actions">
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewInvoice(invoice.InvoiceId)">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            @if (invoice.Status == "Unpaid")
+                                            {
+                                                <button class="btn btn-sm btn-success ms-2" @onclick="() => PayInvoice(invoice.InvoiceId)">
+                                                    <i class="fas fa-credit-card"></i> Pay
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info" role="alert">
+                            No invoices found
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+
+    [Parameter]
+    public int UserId { get; set; }
+
+    private User? user;
+    private Client? client;
+    private List<Case> cases = new();
+    private List<Invoice> invoices = new();
+    private List<Invoice> filteredInvoices = new();
+    private bool isDarkMode = false;
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string filterStatus = "All";
+
+    private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
+            if (!userResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading user: {userResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+            user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
+
+            var clientsResponse = await Http.GetAsync($"/api/Clients?userId={UserId}");
+            if (!clientsResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading client: {clientsResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+
+            var clients = await clientsResponse.Content.ReadFromJsonAsync<List<Client>>(jsonOptions);
+            client = clients?.FirstOrDefault();
+
+            if (client == null)
+            {
+                errorMessage = "No client found for this user";
+                isLoading = false;
+                return;
+            }
+
+            var casesResponse = await Http.GetAsync($"/api/Cases?clientId={client.UserId}");
+            if (!casesResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+
+            cases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
+
+            var tasks = new List<Task>();
+            foreach (var caseItem in cases)
+            {
+                tasks.Add(LoadInvoices(caseItem.CaseId));
+            }
+            await Task.WhenAll(tasks);
+
+            filteredInvoices = invoices;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+            Console.WriteLine(ex.ToString());
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadInvoices(int caseId)
+    {
+        try
+        {
+            var invoicesResponse = await Http.GetAsync($"/api/cases/{caseId}/Invoices");
+            if (invoicesResponse.IsSuccessStatusCode)
+            {
+                var caseInvoices = await invoicesResponse.Content.ReadFromJsonAsync<List<Invoice>>(jsonOptions) ?? new List<Invoice>();
+                invoices.AddRange(caseInvoices);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading invoices for case {caseId}: {ex.Message}");
+        }
+    }
+
+    private string GetInvoiceStatusBadge(string status)
+    {
+        return status switch
+        {
+            "Paid" => "bg-success",
+            "Unpaid" => "bg-danger",
+            "Pending" => "bg-warning",
+            "Partial" => "bg-info",
+            _ => "bg-secondary"
+        };
+    }
+
+    private async Task ToggleDarkMode()
+    {
+        isDarkMode = !isDarkMode;
+        StateHasChanged();
+    }
+
+    private void ViewInvoice(int invoiceId)
+    {
+        Navigation.NavigateTo($"/client/{UserId}/invoices/{invoiceId}");
+    }
+
+    private void PayInvoice(int invoiceId)
+    {
+        Navigation.NavigateTo($"/client/{UserId}/invoices/{invoiceId}/pay");
+    }
+
+    private void FilterInvoices(ChangeEventArgs e)
+    {
+        filterStatus = e.Value?.ToString() ?? "All";
+        filteredInvoices = filterStatus == "All" ? invoices : invoices.Where(i => i.Status == filterStatus).ToList();
+        StateHasChanged();
+    }
+}
