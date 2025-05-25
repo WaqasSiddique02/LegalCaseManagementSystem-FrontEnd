@@ -1,0 +1,88 @@
+﻿.case-grid, .invoice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.case-card, .invoice-card {
+    background: var(--card-bg, #fff);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+    .case-card:hover, .invoice-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+.case-card-header, .invoice-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+    .case-card-header h4, .invoice-card-header h4 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+.case-card-body, .invoice-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.case-info p, .invoice-info p {
+    margin: 0.3rem 0;
+    color: var(--text-secondary, #6c757d);
+}
+
+.case-actions, .invoice-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.dark-mode .case-card,
+.dark-mode .invoice-card {
+    background: var(--card-bg-dark, #2c2c2c);
+    color: var(--text-dark-mode, #fff);
+}
+
+.dark-mode .case-info p,
+.dark-mode .invoice-info p {
+    color: var(--text-secondary-dark, #d1d1d1);
+}
+
+.badge {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 12px;
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.header-brand {
+    flex: 1;
+}
+
+.header-left {
+    flex: 2;
+    text-align: center;
+}
+
+.header-actions {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+}
