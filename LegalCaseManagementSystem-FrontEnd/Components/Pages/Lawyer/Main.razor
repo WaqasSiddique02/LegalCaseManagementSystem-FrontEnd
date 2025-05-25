@@ -11,23 +11,54 @@
 
 <div class="dashboard @(DashboardState.IsDarkMode ? "dark-mode" : "")" @ref="dashboardRef">
     <header class="dashboard-header">
-        <div class="header-left">
-            <h1>CounselConnect <span class="badge">PRO</span></h1>
-            <p class="text-muted">Your legal practice dashboard</p>
-        </div>
-        <div class="header-right">
-            <button class="btn btn-icon" @onclick="ToggleDarkMode">
-                <i class="fas @(DashboardState.IsDarkMode ? "fa-sun" : "fa-moon")"></i>
-            </button>
-            <div class="user-dropdown">
-                <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName ?? "Lawyer")&background=4e73df&color=fff"
-                     class="user-avatar" />
-                <div class="dropdown-content">
-                    <a href="#"><i class="fas fa-user"></i> Profile</a>
-                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
-                    <a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        <div class="header-container">
+            <div class="header-brand">
+                <img src="/images/law.png" alt="The Legals Logo" class="brand-logo" />
+                <div class="brand-text">
+                    <h1>The Legals <span class="pro-badge">PRO</span></h1>
+                    <p class="brand-tagline">Legal Excellence • Trusted Advocacy</p>
                 </div>
             </div>
+
+            <div class="header-actions">
+                <nav class="header-nav">
+                    <a href="#dashboard" class="nav-link active">Dashboard</a>
+                    <a href="#cases" class="nav-link">Cases</a>
+                    <a href="#clients" class="nav-link">Clients</a>
+                    <a href="#calendar" class="nav-link">Calendar</a>
+                    <a href="#documents" class="nav-link">Documents</a>
+                </nav>
+
+                <div class="action-buttons">
+                    <button class="theme-toggle" @onclick="ToggleDarkMode">
+                        <i class="@(DashboardState.IsDarkMode )"></i>
+                    </button>
+
+                    <div class="user-dropdown">
+                        <div class="user-avatar-container">
+                            <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName )&background=4e73df&color=fff"
+                                 class="user-avatar" />
+                            <span class="user-status"></span>
+                        </div>
+                        <div class="dropdown-menu">
+                            <a href="/profile-details/@UserId" class="dropdown-item">
+                                <i class="fas fa-user"></i> My Profile
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
     </header>
 
@@ -89,7 +120,7 @@
                     <h2>My Cases</h2>
                     <div class="case-controls">
                         <div class="case-count">Total: @lawyerCases.Count</div>
-                        <button class="btn btn-primary btn-sm" @onclick="NavigateToCases" aria-label="View all cases">
+                        <button class="btn btn-primary btn-sm" @onclick="@(() => NavigateToCases())" aria-label="View all cases">
                             <i class="fas fa-list"></i> View All Cases
                         </button>
                     </div>
@@ -158,9 +189,9 @@
             <div class="hearings-card">
                 <div class="card-header">
                     <h3>Upcoming Hearings</h3>
-                    <button class="btn btn-sm btn-primary" @onclick="NavigateToCases">
+                    <NavLink class="btn btn-sm btn-primary" href="@($"/cases")">
                         View All
-                    </button>
+                    </NavLink>
                 </div>
                 <div class="hearings-list">
                     @if (DashboardState.IsLoading)
@@ -328,6 +359,7 @@
             if (!lawyerResponse.IsSuccessStatusCode)
             {
                 DashboardState.ErrorMessage = $"Error loading lawyer details: {lawyerResponse.StatusCode}";
+                Console.WriteLine($"Lawyer API error: {await lawyerResponse.Content.ReadAsStringAsync()}");
                 return;
             }
 
@@ -342,11 +374,12 @@
             DashboardState.LawyerId = UserId;
             DashboardState.LawyerName = lawyer?.FullName ?? "Lawyer";
 
-            // Get all cases and filter for this lawyer on the client side
+            // Get all cases
             var casesResponse = await Http.GetAsync("/api/Cases?include=client");
             if (!casesResponse.IsSuccessStatusCode)
             {
                 DashboardState.ErrorMessage = $"Error loading cases: {casesResponse.StatusCode}";
+                Console.WriteLine($"Cases API error: {await casesResponse.Content.ReadAsStringAsync()}");
                 return;
             }
 
@@ -358,10 +391,9 @@
                         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
                     }) ?? new();
 
-            // Filter cases for this lawyer
             lawyerCases = allCases.Where(c => c.LawyerId == UserId).ToList();
+            DashboardState.Cases = lawyerCases;
 
-            // Load related data only for this lawyer's cases
             foreach (var caseItem in lawyerCases)
             {
                 // Load hearings
@@ -375,7 +407,7 @@
                 }
 
                 // Load tasks
-                var tasksResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/CaseTasks");
+                var tasksResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Tasks");
                 if (tasksResponse.IsSuccessStatusCode)
                 {
                     var tasksContent = await tasksResponse.Content.ReadAsStringAsync();
@@ -393,10 +425,22 @@
                         new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
                     lawyerDocuments.AddRange(documents);
                 }
+
+                // Load invoices
+                var invoicesResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Invoices");
+                if (invoicesResponse.IsSuccessStatusCode)
+                {
+                    var invoicesContent = await invoicesResponse.Content.ReadAsStringAsync();
+                    var invoices = System.Text.Json.JsonSerializer.Deserialize<List<Invoice>>(invoicesContent,
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    DashboardState.Invoices.AddRange(invoices);
+                }
             }
 
-            // Generate recent activities
+            DashboardState.UpcomingHearings = lawyerHearings.Where(h => h.HearingDate >= DateTime.Now).ToList();
+            DashboardState.RecentTasks = lawyerTasks.OrderByDescending(t => t.CreatedAt).Take(5).ToList();
             recentActivities = GenerateRecentActivities();
+            DashboardState.RecentActivities = recentActivities;
 
             DashboardState.NotifyStateChanged();
         }
@@ -415,6 +459,12 @@
             DashboardState.IsLoading = false;
             DashboardState.NotifyStateChanged();
         }
+    }
+
+    private void NavigateToCases()
+    {
+        DashboardState.Cases = lawyerCases;
+        Navigation.NavigateTo($"/lawyer/{UserId}/cases", forceLoad: true);
     }
 
     private List<DashboardState.Activity> GenerateRecentActivities()
@@ -509,13 +559,17 @@
 
     private void ViewCaseDetails(int caseId)
     {
-        Navigation.NavigateTo($"/case/{caseId}");
+        Navigation.NavigateTo($"/cases/{caseId}", forceLoad: true);
     }
 
-    private void NavigateToCases()
-    {
-        Navigation.NavigateTo("/cases");
-    }
+    // private void NavigateToCases()
+    // {
+    //     Navigation.NavigateTo("/cases", new NavigationOptions
+    //         {
+    //             ForceLoad = true
+    //         });
+
+    // }
 
     private string GetStatusClass(CaseStatus status)
     {

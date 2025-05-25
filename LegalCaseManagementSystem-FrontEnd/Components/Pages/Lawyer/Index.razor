@@ -3,10 +3,12 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject DashboardState DashboardState
 @rendermode InteractiveServer
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using LegalCaseManagementSystem_FrontEnd.Models
+@using LegalCaseManagementSystem_FrontEnd.Services
 
 <!-- Dashboard Container -->
 <div class="dashboard @(isDarkMode ? "dark-mode" : "")">
@@ -21,9 +23,9 @@
                 <i class="fas @(isDarkMode ? "fa-sun" : "fa-moon")"></i>
             </button>
             <div class="user-dropdown">
-                <img src="https://ui-avatars.com/api/?name=Lawyer&background=4e73df&color=fff" class="user-avatar" />
+                <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName ?? "Lawyer")&background=4e73df&color=fff" class="user-avatar" />
                 <div class="dropdown-content">
-                    <a href="#"><i class="fas fa-user"></i> Profile</a>
+                    <a href="/profile-details/@DashboardState.LawyerId"><i class="fas fa-user"></i> Profile</a>
                     <a href="#"><i class="fas fa-cog"></i> Settings</a>
                     <a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 </div>
@@ -55,8 +57,8 @@
                                 <select class="form-select" @bind="selectedStatus">
                                     <option value="">All</option>
                                     <option value="Open">Open</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Closed">Closed</option>
+                                    <option value="InProgress">In Progress</option>
+                                    <option value="Completed">Completed</option>
                                 </select>
                             </div>
                         </div>
@@ -101,11 +103,11 @@
                                         <td>@caseItem.Description</td>
                                         <td>
                                             <span class="badge @(GetStatusBadgeClass(caseItem.Status))">
-                                                @caseItem.Status
+                                                @GetStatusText(caseItem.Status)
                                             </span>
                                         </td>
                                         <td>@caseItem.StartDate.ToString("g")</td>
-                                        <td>@(caseItem.Client?.FullName ?? caseItem.ClientId.ToString())</td>
+                                        <td>@(caseItem.Client?.FullName ?? "Not assigned")</td>
                                         <td>
                                             <button class="btn btn-primary btn-sm" @onclick="() => ViewCase(caseItem.CaseId)" title="View Details">
                                                 <i class="bi bi-eye"></i>
@@ -128,7 +130,7 @@
                         <h3>@caseDetails.Title</h3>
                         <p class="text-muted">@caseDetails.Description</p>
                         <span class="badge @(GetStatusBadgeClass(caseDetails.Status))">
-                            @caseDetails.Status
+                            @GetStatusText(caseDetails.Status)
                         </span>
                         <div class="case-actions">
                             <button class="btn btn-primary" @onclick="GoBack">
@@ -158,6 +160,9 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link @(activeTab == "Documents" ? "active" : "")" @onclick="@(() => SetActiveTab("Documents"))" role="tab">Documents</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(activeTab == "Invoices" ? "active" : "")" @onclick="@(() => SetActiveTab("Invoices"))" role="tab">Invoices</a>
                             </li>
                         </ul>
                         <div class="tab-content mt-3">
@@ -346,6 +351,58 @@
                                     }
                                 </div>
                             }
+                            else if (activeTab == "Invoices")
+                            {
+                                <div class="invoices-list">
+                                    <h4>Invoices</h4>
+                                    <button class="btn btn-sm btn-primary mb-3" @onclick="AddNewInvoice">
+                                        <i class="fas fa-plus"></i> Create Invoice
+                                    </button>
+                                    @if (caseDetails.Invoices?.Any() == true)
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-dark table-striped table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Title</th>
+                                                        <th>Amount</th>
+                                                        <th>Issue Date</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var invoice in caseDetails.Invoices)
+                                                    {
+                                                        <tr>
+                                                            <td>@invoice.InvoiceId</td>
+                                                            <td>@invoice.Amount.ToString("C")</td>
+                                                            <td>@invoice.IssuedDate.ToString("dd MMM yyyy")</td>
+                                                            <td>
+                                                                <span class="badge @(invoice.Status == "Paid" ? "badge-success" : "badge-warning")">
+                                                                    @invoice.Status
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditInvoice(invoice)">
+                                                                    <i class="fas fa-edit"></i> Edit
+                                                                </button>
+                                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewInvoice(invoice)">
+                                                                    <i class="fas fa-eye"></i> View
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p>No invoices available.</p>
+                                    }
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -361,6 +418,9 @@
 </div>
 
 @code {
+    [Parameter]
+    public int LawyerId { get; set; }
+
     [Parameter]
     public int? caseId { get; set; }
 
@@ -382,6 +442,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        isDarkMode = DashboardState.IsDarkMode;
+        DashboardState.LawyerId = LawyerId;
+        DashboardState.OnChange += StateHasChanged;
         await LoadData();
     }
 
@@ -392,35 +455,24 @@
 
     private async Task LoadData()
     {
-        if (caseId.HasValue)
-        {
-            await LoadCaseDetails(caseId.Value);
-        }
-        else
-        {
-            await LoadCases();
-        }
-    }
-
-    private async Task LoadCases()
-    {
         isLoading = true;
         errorMessage = null;
 
         try
         {
-            var response = await Http.GetAsync("/api/Cases?include=client,lawyer");
-            if (!response.IsSuccessStatusCode)
+            if (caseId.HasValue)
             {
-                errorMessage = $"Error loading cases: {response.StatusCode}";
-                return;
+                await LoadCaseDetails(caseId.Value);
             }
-            var content = await response.Content.ReadAsStringAsync();
-            cases = JsonSerializer.Deserialize<List<Case>>(content, jsonOptions) ?? new();
+            else
+            {
+                await LoadCases();
+            }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Exception loading cases: {ex.Message}";
+            errorMessage = $"Exception loading data: {ex.Message}";
+            await JSRuntime.InvokeVoidAsync("console.log", $"LoadData error: {ex.Message}");
         }
         finally
         {
@@ -429,33 +481,61 @@
         }
     }
 
+    private async Task LoadCases()
+    {
+        if (DashboardState.Cases?.Any() == true && DashboardState.LawyerId == LawyerId)
+        {
+            cases = DashboardState.Cases;
+        }
+        else
+        {
+            var casesResponse = await Http.GetAsync("/api/Cases?include=client");
+            if (!casesResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
+                await JSRuntime.InvokeVoidAsync("console.log", $"LoadCases error: {casesResponse.StatusCode}");
+                return;
+            }
+
+            var casesContent = await casesResponse.Content.ReadAsStringAsync();
+            var allCases = JsonSerializer.Deserialize<List<Case>>(casesContent, jsonOptions) ?? new();
+            cases = allCases.Where(c => c.LawyerId == LawyerId).ToList();
+            DashboardState.Cases = cases;
+            DashboardState.LawyerId = LawyerId;
+        }
+    }
+
     private async Task LoadCaseDetails(int id)
     {
-        isLoading = true;
-        errorMessage = null;
-
         try
         {
-            // Try to fetch with include parameter
-            var response = await Http.GetAsync($"/api/Cases/{id}?include=client,lawyer,tasks,hearings,documents");
+            var response = await Http.GetAsync($"/api/Cases/{id}?include=client,lawyer,tasks,hearings,documents,invoices");
             if (!response.IsSuccessStatusCode)
             {
-                // Fallback to individual API calls if include is not supported
                 response = await Http.GetAsync($"/api/Cases/{id}");
                 if (!response.IsSuccessStatusCode)
                 {
                     errorMessage = $"Error loading case details: {response.StatusCode}";
                     caseDetails = null;
+                    await JSRuntime.InvokeVoidAsync("console.log", $"LoadCaseDetails error: {response.StatusCode}");
                     return;
                 }
+
                 var content = await response.Content.ReadAsStringAsync();
                 caseDetails = JsonSerializer.Deserialize<Case>(content, jsonOptions);
                 if (caseDetails != null)
                 {
-                    // Load related data separately
+                    if (caseDetails.LawyerId != LawyerId)
+                    {
+                        errorMessage = "Case does not belong to this lawyer.";
+                        caseDetails = null;
+                        await JSRuntime.InvokeVoidAsync("console.log", "Case does not belong to this lawyer.");
+                        return;
+                    }
                     caseDetails.CaseTasks = await LoadTasks(id);
                     caseDetails.Hearings = await LoadHearings(id);
                     caseDetails.Documents = await LoadDocuments(id);
+                    caseDetails.Invoices = await LoadInvoices(id);
                     caseDetails.Client = await LoadClient(caseDetails.ClientId);
                     caseDetails.Lawyer = await LoadLawyer(caseDetails.LawyerId);
                 }
@@ -464,6 +544,13 @@
             {
                 var content = await response.Content.ReadAsStringAsync();
                 caseDetails = JsonSerializer.Deserialize<Case>(content, jsonOptions);
+                if (caseDetails != null && caseDetails.LawyerId != LawyerId)
+                {
+                    errorMessage = "Case does not belong to this lawyer.";
+                    caseDetails = null;
+                    await JSRuntime.InvokeVoidAsync("console.log", "Case does not belong to this lawyer.");
+                    return;
+                }
             }
 
             if (caseDetails != null)
@@ -471,23 +558,26 @@
                 caseDetails.CaseTasks ??= new List<CaseTask>();
                 caseDetails.Hearings ??= new List<Hearing>();
                 caseDetails.Documents ??= new List<Document>();
+                caseDetails.Invoices ??= new List<Invoice>();
             }
+        }
+        catch (JsonException jsonEx)
+        {
+            errorMessage = $"Data format error: {jsonEx.Message}";
+            caseDetails = null;
+            await JSRuntime.InvokeVoidAsync("console.log", $"LoadCaseDetails JSON error: {jsonEx.Message}");
         }
         catch (Exception ex)
         {
             errorMessage = $"Exception loading case details: {ex.Message}";
             caseDetails = null;
-        }
-        finally
-        {
-            isLoading = false;
-            StateHasChanged();
+            await JSRuntime.InvokeVoidAsync("console.log", $"LoadCaseDetails error: {ex.Message}");
         }
     }
 
     private async Task<List<CaseTask>> LoadTasks(int caseId)
     {
-        var response = await Http.GetAsync($"/api/cases/{caseId}/CaseTasks");
+        var response = await Http.GetAsync($"/api/cases/{caseId}/Tasks");
         if (response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadAsStringAsync();
@@ -514,6 +604,17 @@
         {
             var content = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<List<Document>>(content, jsonOptions) ?? new();
+        }
+        return new();
+    }
+
+    private async Task<List<Invoice>> LoadInvoices(int caseId)
+    {
+        var response = await Http.GetAsync($"/api/cases/{caseId}/Invoices");
+        if (response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<List<Invoice>>(content, jsonOptions) ?? new();
         }
         return new();
     }
@@ -555,16 +656,29 @@
         return status switch
         {
             CaseStatus.Open => "badge-open",
-            CaseStatus.Closed => "badge-closed",
-            CaseStatus.Pending => "badge-pending",
+            CaseStatus.Completed => "badge-closed",
+            CaseStatus.InProgress => "badge-pending",
             _ => "badge-secondary"
         };
     }
 
-    private void ToggleDarkMode()
+    private string GetStatusText(CaseStatus status)
+    {
+        return status switch
+        {
+            CaseStatus.Open => "Open",
+            CaseStatus.Completed => "Completed",
+            CaseStatus.InProgress => "In Progress",
+            _ => status.ToString()
+        };
+    }
+
+    private async Task ToggleDarkMode()
     {
         isDarkMode = !isDarkMode;
-        StateHasChanged();
+        DashboardState.IsDarkMode = isDarkMode;
+        DashboardState.NotifyStateChanged();
+        await JSRuntime.InvokeVoidAsync("updateTheme", isDarkMode);
     }
 
     private void SetActiveTab(string tab)
@@ -573,9 +687,11 @@
         StateHasChanged();
     }
 
-    private void ViewCase(int caseId)
+    private async Task ViewCase(int caseId)
     {
-        Navigation.NavigateTo($"/cases/{caseId}");
+        Console.WriteLine($"ViewCase: Navigating to /lawyer/{LawyerId}/cases/{caseId}");
+        await JSRuntime.InvokeVoidAsync("console.log", $"ViewCase: Navigating to /lawyer/{LawyerId}/cases/{caseId}");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}");
     }
 
     private async Task UpdateTaskStatus(CaseTask task)
@@ -588,7 +704,7 @@
                 Description = task.Description,
                 Status = task.Status == "Completed" ? "Pending" : "Completed"
             };
-            var response = await Http.PutAsJsonAsync($"/api/cases/{caseId}/CaseTasks/{task.TaskId}", updatedTask);
+            var response = await Http.PutAsJsonAsync($"/api/cases/{caseId}/Tasks/{task.TaskId}", updatedTask);
             if (response.IsSuccessStatusCode)
             {
                 await LoadCaseDetails(caseId!.Value);
@@ -596,11 +712,13 @@
             else
             {
                 errorMessage = $"Error updating task: {await response.Content.ReadAsStringAsync()}";
+                await JSRuntime.InvokeVoidAsync("console.log", $"UpdateTaskStatus error: {await response.Content.ReadAsStringAsync()}");
             }
         }
         catch (Exception ex)
         {
             errorMessage = $"Exception updating task: {ex.Message}";
+            await JSRuntime.InvokeVoidAsync("console.log", $"UpdateTaskStatus error: {ex.Message}");
         }
         finally
         {
@@ -608,48 +726,87 @@
         }
     }
 
-    private void GoBack()
+    private async Task GoBack()
     {
-        Navigation.NavigateTo("/cases");
+        Console.WriteLine($"GoBack: Navigating to /lawyer/{LawyerId}/cases");
+        await JSRuntime.InvokeVoidAsync("console.log", $"GoBack: Navigating to /lawyer/{LawyerId}/cases");
+        DashboardState.Cases = cases;
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases");
     }
 
-    private void EditCase(int caseId)
+    private async Task EditCase(int caseId)
     {
-        Navigation.NavigateTo($"/cases/{caseId}/edit");
+        Console.WriteLine($"EditCase: Navigating to /lawyer/{LawyerId}/cases/{caseId}/edit");
+        await JSRuntime.InvokeVoidAsync("console.log", $"EditCase: Navigating to /lawyer/{LawyerId}/cases/{caseId}/edit");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/edit");
     }
 
-    private void AddNewTask()
+    private async Task AddNewTask()
     {
-        Navigation.NavigateTo($"/cases/{caseId}/tasks/new");
+        Console.WriteLine($"AddNewTask: Navigating to /lawyer/{LawyerId}/cases/{caseId}/tasks/new");
+        await JSRuntime.InvokeVoidAsync("console.log", $"AddNewTask: Navigating to /lawyer/{LawyerId}/cases/{caseId}/tasks/new");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/tasks/new");
     }
 
-    private void EditTask(CaseTask task)
+    private async Task EditTask(CaseTask task)
     {
-        Navigation.NavigateTo($"/cases/{caseId}/tasks/{task.TaskId}/edit");
+        Console.WriteLine($"EditTask: Navigating to /lawyer/{LawyerId}/cases/{caseId}/tasks/{task.TaskId}/edit");
+        await JSRuntime.InvokeVoidAsync("console.log", $"EditTask: Navigating to /lawyer/{LawyerId}/cases/{caseId}/tasks/{task.TaskId}/edit");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/tasks/{task.TaskId}/edit");
     }
 
-    private void AddNewHearing()
+    private async Task AddNewHearing()
     {
-        Navigation.NavigateTo($"/cases/{caseId}/hearings/new");
+        Console.WriteLine($"AddNewHearing: Navigating to /lawyer/{LawyerId}/cases/{caseId}/hearings/new");
+        await JSRuntime.InvokeVoidAsync("console.log", $"AddNewHearing: Navigating to /lawyer/{LawyerId}/cases/{caseId}/hearings/new");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/hearings/new");
     }
 
-    private void EditHearing(Hearing hearing)
+    private async Task EditHearing(Hearing hearing)
     {
-        Navigation.NavigateTo($"/cases/{caseId}/hearings/{hearing.HearingId}/edit");
+        Console.WriteLine($"EditHearing: Navigating to /lawyer/{LawyerId}/cases/{caseId}/hearings/{hearing.HearingId}/edit");
+        await JSRuntime.InvokeVoidAsync("console.log", $"EditHearing: Navigating to /lawyer/{LawyerId}/cases/{caseId}/hearings/{hearing.HearingId}/edit");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/hearings/{hearing.HearingId}/edit");
     }
 
-    private void AddNewDocument()
+    private async Task AddNewDocument()
     {
-        Navigation.NavigateTo($"/cases/{caseId}/documents/new");
+        Console.WriteLine($"AddNewDocument: Navigating to /lawyer/{LawyerId}/cases/{caseId}/documents/new");
+        await JSRuntime.InvokeVoidAsync("console.log", $"AddNewDocument: Navigating to /lawyer/{LawyerId}/cases/{caseId}/documents/new");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/documents/new");
     }
 
-    private void ViewDocument(Document document)
+    private async Task ViewDocument(Document document)
     {
-        JSRuntime.InvokeVoidAsync("alert", "Document viewing not implemented in this demo.");
+        await JSRuntime.InvokeVoidAsync("alert", "Document viewing not implemented in this demo.");
     }
 
-    private void DownloadDocument(Document document)
+    private async Task DownloadDocument(Document document)
     {
-        JSRuntime.InvokeVoidAsync("alert", "Document download not implemented in this demo.");
+        await JSRuntime.InvokeVoidAsync("alert", "Document download not implemented in this demo.");
+    }
+
+    private async Task AddNewInvoice()
+    {
+        Console.WriteLine($"AddNewInvoice: Navigating to /lawyer/{LawyerId}/cases/{caseId}/invoices/new");
+        await JSRuntime.InvokeVoidAsync("console.log", $"AddNewInvoice: Navigating to /lawyer/{LawyerId}/cases/{caseId}/invoices/new");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/invoices/new");
+    }
+
+    private async Task EditInvoice(Invoice invoice)
+    {
+        Console.WriteLine($"EditInvoice: Navigating to /lawyer/{LawyerId}/cases/{caseId}/invoices/{invoice.InvoiceId}/edit");
+        await JSRuntime.InvokeVoidAsync("console.log", $"EditInvoice: Navigating to /lawyer/{LawyerId}/cases/{caseId}/invoices/{invoice.InvoiceId}/edit");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/invoices/{invoice.InvoiceId}/edit");
+    }
+
+    private async Task ViewInvoice(Invoice invoice)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", "Invoice viewing not implemented in this demo.");
+    }
+
+    public void Dispose()
+    {
+        DashboardState.OnChange -= StateHasChanged;
     }
 }
