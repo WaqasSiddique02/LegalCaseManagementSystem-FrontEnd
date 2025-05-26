@@ -18,7 +18,12 @@
             <input type="text" @bind="loginModel.Username" id="username" placeholder="Enter your username" required />
 
             <label for="password">Password</label>
-            <input type="password" @bind="loginModel.Password" id="password" placeholder="Enter your password" required />
+            <div class="password-container">
+                <input type="@(showPassword ? "text" : "password")" @bind="loginModel.Password" id="password" placeholder="Enter your password" required />
+                <button type="button" @onclick="TogglePasswordVisibility" class="password-toggle">
+                    <i class="@(showPassword ? "fas fa-eye-slash" : "fas fa-eye")"></i>
+                </button>
+            </div>
 
             <button @onclick="HandleLogin">Login</button>
 
@@ -35,6 +40,12 @@
 @code {
     private LoginModel loginModel = new LoginModel();
     private string errorMessage = string.Empty;
+    private bool showPassword = false;
+
+    private void TogglePasswordVisibility()
+    {
+        showPassword = !showPassword;
+    }
 
     private async Task HandleLogin()
     {
@@ -84,7 +95,6 @@
                         AuthService.ClearAuthToken();
                         break;
                 }
-
             }
             else
             {

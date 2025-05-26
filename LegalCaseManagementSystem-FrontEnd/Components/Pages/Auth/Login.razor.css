@@ -72,6 +72,7 @@
         background: #3a3a3a;
         color: #ffffff;
         font-size: 1rem;
+        box-sizing: border-box; /* Ensure padding doesn't affect width */
     }
 
         .login-container input:focus {
@@ -80,7 +81,7 @@
             box-shadow: 0 0 5px rgba(123, 14, 207, 0.5);
         }
 
-    .login-container button {
+    .login-container button:not(.password-toggle) {
         width: 100%;
         padding: 12px;
         background: #7b0ecf;
@@ -92,7 +93,7 @@
         transition: background 0.3s, transform 0.2s;
     }
 
-        .login-container button:hover {
+        .login-container button:not(.password-toggle):hover {
             background: #a592b3;
             transform: translateY(-2px);
         }
@@ -113,13 +114,50 @@
             text-decoration: underline;
         }
 
+.password-container {
+    position: relative;
+    width: 100%;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px; 
+}
+
+    .password-toggle i {
+        font-size: 1rem;
+        color: #b0b0b0; 
+    }
+
+    .password-toggle:hover i {
+        color: #ffffff; 
+    }
+
+input[type="password"], input[type="text"] {
+    width: 100%;
+    padding-right: 50px; 
+    box-sizing: border-box;
+}
+
 @media (max-width: 768px) {
     .login-page {
         justify-content: center;
     }
 
     .grid-container {
-        grid-template-columns: 1fr; 
+        grid-template-columns: 1fr;
         width: 90%;
         margin: 0 auto;
     }
@@ -135,3 +173,4 @@
         padding: 25px;
     }
 }
+

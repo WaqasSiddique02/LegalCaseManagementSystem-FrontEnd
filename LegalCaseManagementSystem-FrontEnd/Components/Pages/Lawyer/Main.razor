@@ -136,7 +136,15 @@
                 else if (!string.IsNullOrEmpty(DashboardState.ErrorMessage))
                 {
                     <div class="alert alert-danger" role="alert">
-                        @DashboardState.ErrorMessage
+                        @if (DashboardState.ErrorMessage.Contains("NotFound") || DashboardState.ErrorMessage.Contains("not a lawyer"))
+                        {
+                            <p>Lawyer not found or user is not a lawyer. Please verify the user ID or contact support.</p>
+                            <a href="/lawyers" class="btn btn-primary">Back to Dashboard</a>
+                        }
+                        else
+                        {
+                            <p>@DashboardState.ErrorMessage</p>
+                        }
                     </div>
                 }
                 else if (lawyerCases.Any())
@@ -185,8 +193,6 @@
                     </div>
                 }
             </div>
-    
-           
 
             <div class="hearings-card">
                 <div class="card-header">
@@ -356,32 +362,74 @@
 
         try
         {
-            // Get lawyer details
-            var lawyerResponse = await Http.GetAsync($"/api/Lawyers/{userId}");
-            if (!lawyerResponse.IsSuccessStatusCode)
+            // Step 1: Fetch user details by userId
+            Console.WriteLine($"Fetching user with userId: {userId}");
+            var userResponse = await Http.GetAsync($"/api/Users/{userId}");
+            if (!userResponse.IsSuccessStatusCode)
             {
-                DashboardState.ErrorMessage = $"Error loading lawyer details: {lawyerResponse.StatusCode}";
-                Console.WriteLine($"Lawyer API error: {await lawyerResponse.Content.ReadAsStringAsync()}");
+                var errorContent = await userResponse.Content.ReadAsStringAsync();
+                DashboardState.ErrorMessage = $"Error loading user details: {userResponse.StatusCode}. Details: {errorContent}";
+                Console.WriteLine($"User API error: {errorContent}");
+                Navigation.NavigateTo("/lawyers");
                 return;
             }
 
-            var lawyerContent = await lawyerResponse.Content.ReadAsStringAsync();
-            var lawyer = System.Text.Json.JsonSerializer.Deserialize<Lawyer>(lawyerContent,
+            var userContent = await userResponse.Content.ReadAsStringAsync();
+            var user = System.Text.Json.JsonSerializer.Deserialize<User>(userContent,
                 new System.Text.Json.JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true,
                         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
                     });
 
-            DashboardState.LawyerId = userId;
-            DashboardState.LawyerName = lawyer?.FullName ?? "Lawyer";
+            // Step 2: Verify user is a Lawyer
+            if (user.Role != "Lawyer")
+            {
+                DashboardState.ErrorMessage = "User is not a lawyer.";
+                Console.WriteLine($"User role error: UserId {userId} has role {user.Role}");
+                Navigation.NavigateTo("/lawyers");
+                return;
+            }
 
-            // Get all cases
+            // Step 3: Fetch all lawyers to map userId to lawyerId
+            var lawyersResponse = await Http.GetAsync("/api/Lawyers");
+            if (!lawyersResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await lawyersResponse.Content.ReadAsStringAsync();
+                DashboardState.ErrorMessage = $"Error loading lawyers: {lawyersResponse.StatusCode}. Details: {errorContent}";
+                Console.WriteLine($"Lawyers API error: {errorContent}");
+                Navigation.NavigateTo("/lawyers");
+                return;
+            }
+
+            var lawyersContent = await lawyersResponse.Content.ReadAsStringAsync();
+            var lawyers = System.Text.Json.JsonSerializer.Deserialize<List<Lawyer>>(lawyersContent,
+                new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+                    }) ?? new();
+
+            var lawyer = lawyers.FirstOrDefault(l => l.UserId == userId);
+            if (lawyer == null)
+            {
+                DashboardState.ErrorMessage = $"No lawyer found for userId: {userId}";
+                Console.WriteLine($"Lawyer not found for userId: {userId}");
+                Navigation.NavigateTo("/lawyers");
+                return;
+            }
+
+            // Step 4: Set lawyer details
+            DashboardState.LawyerId = lawyer.LawyerId;
+            DashboardState.LawyerName = lawyer.FullName ?? "Lawyer";
+
+            // Step 5: Fetch cases for this lawyerId
             var casesResponse = await Http.GetAsync("/api/Cases?include=client");
             if (!casesResponse.IsSuccessStatusCode)
             {
-                DashboardState.ErrorMessage = $"Error loading cases: {casesResponse.StatusCode}";
-                Console.WriteLine($"Cases API error: {await casesResponse.Content.ReadAsStringAsync()}");
+                var errorContent = await casesResponse.Content.ReadAsStringAsync();
+                DashboardState.ErrorMessage = $"Error loading cases: {casesResponse.StatusCode}. Details: {errorContent}";
+                Console.WriteLine($"Cases API error: {errorContent}");
                 return;
             }
 
@@ -393,7 +441,7 @@
                         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
                     }) ?? new();
 
-            lawyerCases = allCases.Where(c => c.LawyerId == userId).ToList();
+            lawyerCases = allCases.Where(c => c.LawyerId == lawyer.LawyerId).ToList();
             DashboardState.Cases = lawyerCases;
 
             foreach (var caseItem in lawyerCases)
@@ -552,10 +600,17 @@
                 recentActivities = GenerateRecentActivities();
                 DashboardState.NotifyStateChanged();
             }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                DashboardState.ErrorMessage = $"Error updating task: {response.StatusCode}. Details: {errorContent}";
+                Console.WriteLine($"Task update error: {errorContent}");
+            }
         }
         catch (Exception ex)
         {
             DashboardState.ErrorMessage = $"Exception updating task: {ex.Message}";
+            Console.WriteLine($"Task update exception: {ex}");
         }
     }
 
