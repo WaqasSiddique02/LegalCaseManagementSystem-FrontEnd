@@ -19,33 +19,27 @@
 
             <div class="header-left">
                 <h1>My Cases</h1>
-                <p class="text-muted">Welcome back, @user?.Username</p>
+                <p class="text-muted">@user?.Username</p>
             </div>
 
             <div class="header-actions">
-                <div class="action-buttons">
-                    <button class="theme-toggle" @onclick="ToggleDarkMode">
-                        <i class="fas @(isDarkMode ? "fa-sun" : "fa-moon")"></i>
-                    </button>
-
-                    <div class="user-dropdown">
-                        <div class="user-avatar-container">
-                            <img src="https://ui-avatars.com/api/?name=@("J")&background=4e73df&color=fff"
-                                 class="user-avatar" />
-                            <span class="user-status"></span>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a href="/client/profile/@UserId" class="dropdown-item">
-                                <i class="fas fa-user"></i> My Profile
-                            </a>
-                            <a href="#" class="dropdown-item">
-                                <i class="fas fa-cog"></i> Settings
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a href="/logout" class="dropdown-item">
-                                <i class="fas fa-sign-out-alt"></i> Logout
-                            </a>
-                        </div>
+                <div class="user-dropdown">
+                    <div class="user-avatar-container">
+                        <img src="https://ui-avatars.com/api/?name=@(user?.Username?.FirstOrDefault() ?? 'U')&background=4e73df&color=fff"
+                             class="user-avatar" />
+                        <span class="user-status"></span>
+                    </div>
+                    <div class="dropdown-menu">
+                        <a href="/client/profile/@UserId" class="dropdown-item">
+                            <i class="fas fa-user"></i> My Profile
+                        </a>
+                        <a href="#" class="dropdown-item">
+                            <i class="fas fa-cog"></i> Settings
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="/logout" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
                     </div>
                 </div>
             </div>
@@ -76,13 +70,20 @@
             <div class="content-card">
                 <div class="card-header">
                     <h3>All Cases</h3>
-                    <a href="/client/@UserId" class="btn btn-primary btn-sm">Back to Dashboard</a>
+                    <div class="d-flex align-items-center gap-2">
+                        <select class="form-select form-select-sm" @onchange="FilterCases">
+                            <option value="All">All</option>
+                            <option value="Open">Open</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                        <a href="/client/@UserId" class="btn btn-primary btn-sm">Back to Dashboard</a>
+                    </div>
                 </div>
                 <div class="card-body">
-                    @if (cases.Any())
+                    @if (filteredCases.Any())
                     {
                         <div class="case-grid">
-                            @foreach (var caseItem in cases.OrderByDescending(c => c.StartDate))
+                            @foreach (var caseItem in filteredCases.OrderByDescending(c => c.StartDate))
                             {
                                 <div class="case-card">
                                     <div class="case-card-header">
@@ -127,10 +128,12 @@
     private User? user;
     private Client? client;
     private List<Case> cases = new();
+    private List<Case> filteredCases = new();
     private Dictionary<int, Lawyer> lawyers = new();
     private bool isDarkMode = false;
     private bool isLoading = true;
     private string? errorMessage;
+    private string filterStatus = "All";
 
     private static readonly JsonSerializerOptions jsonOptions = new()
         {
@@ -178,6 +181,7 @@
             }
 
             cases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
+            filteredCases = cases; // Initialize filteredCases with all cases
 
             var tasks = new List<Task>();
             foreach (var caseItem in cases)
@@ -232,6 +236,15 @@
             CaseStatus.InProgress => "bg-primary",
             _ => "bg-light text-dark"
         };
+    }
+
+    private void FilterCases(ChangeEventArgs e)
+    {
+        filterStatus = e.Value?.ToString() ?? "All";
+        filteredCases = filterStatus == "All"
+            ? cases
+            : cases.Where(c => c.Status.ToString() == filterStatus).ToList();
+        StateHasChanged();
     }
 
     private async Task ToggleDarkMode()
