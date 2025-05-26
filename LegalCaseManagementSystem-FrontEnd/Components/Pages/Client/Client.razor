@@ -208,46 +208,49 @@
             </div>
 
             <div class="content-card">
-                <div class="card-header">
-                    <h3>Upcoming Hearings</h3>
-                    <button class="btn btn-primary btn-sm" @onclick="NavigateToHearings">
-                        View All
-                    </button>
-                </div>
-                <div class="card-body">
-                    @if (upcomingHearings.Any())
-                    {
-                        <div class="hearing-list">
-                            @foreach (var hearing in upcomingHearings.OrderBy(h => h.HearingDate).Take(3))
-                            {
-                                <div class="hearing-item">
-                                    <div class="hearing-date">
-                                        <span class="day">@hearing.HearingDate.Day</span>
-                                        <span class="month">@hearing.HearingDate.ToString("MMM")</span>
-                                    </div>
-                                    <div class="hearing-info">
-                                        <h4>@(cases.FirstOrDefault(c => c.CaseId == hearing.CaseId)?.Title)</h4>
-                                        <p>
-                                            <i class="fas fa-clock"></i>
-                                            @hearing.HearingDate.ToString("h:mm tt")
-                                        </p>
-                                        <p>
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            @hearing.Venue
-                                        </p>
-                                    </div>
-                                </div>
-                            }
+    <div class="card-header">
+        <h3>Upcoming Hearings</h3>
+        <button class="btn btn-primary btn-sm" @onclick="NavigateToHearings">
+            View All
+        </button>
+    </div>
+    <div class="card-body">
+        @if (upcomingHearings.Any())
+        {
+            <div class="hearing-grid">
+                @foreach (var hearing in upcomingHearings.OrderBy(h => h.HearingDate).Take(3))
+                {
+                    <div class="hearing-card">
+                        <div class="hearing-card-header">
+                            <h4>@(cases.FirstOrDefault(c => c.CaseId == hearing.CaseId)?.Title ?? "Case Details")</h4>
+                            <span class="badge bg-primary">
+                                @hearing.HearingDate.ToString("MMM dd, yyyy")
+                            </span>
                         </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info" role="alert">
-                            No upcoming hearings
+                        <div class="hearing-card-body">
+                            <div class="hearing-info">
+                                <p><strong>Time:</strong> @hearing.HearingDate.ToString("h:mm tt")</p>
+                                <p><strong>Venue:</strong> @hearing.Venue</p>
+                                <p><strong>Case:</strong> @(cases.FirstOrDefault(c => c.CaseId == hearing.CaseId)?.Title ?? "Unknown Case")</p>
+                            </div>
+                            <div class="hearing-actions">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewCase(hearing.CaseId)">
+                                    <i class="fas fa-eye"></i> View Case
+                                </button>
+                            </div>
                         </div>
-                    }
-                </div>
+                    </div>
+                }
             </div>
+        }
+        else
+        {
+            <div class="alert alert-info" role="alert">
+                No upcoming hearings
+            </div>
+        }
+    </div>
+</div>
         }
     </div>
 </div>

@@ -1,62 +1,77 @@
-﻿.hearing-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.hearing-item {
-    display: flex;
-    gap: 1rem;
-    background: var(--card-bg, #fff);
-    border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.hearing-date {
-    text-align: center;
-    min-width: 60px;
-}
-
-    .hearing-date .day {
-        font-size: 1.5rem;
-        font-weight: bold;
-    }
-
-    .hearing-date .month {
-        font-size: 0.9rem;
-        color: var(--text-secondary, #6c757d);
-    }
-
-.hearing-info h4 {
+﻿* {
+    box-sizing: border-box;
     margin: 0;
-    font-size: 1.1rem;
+    padding: 0;
 }
 
-.hearing-actions {
-    margin-top: 1rem;
-    display: flex;
-    gap: 0.5rem;
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    background: #1a1a1a;
+    color: #e0e0e0;
 }
 
-.dark-mode .hearing-item {
-    background: var(--card-bg-dark, #2c2c2c);
-    color: var(--text-dark-mode, #fff);
+:root {
+    --card-bg: #2c2c2c;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --border-color: #444;
+    --primary: #4e73df;
+    --primary-dark: #3a5ab5;
+    --transition: all 0.3s ease;
 }
 
-.dark-mode .hearing-date .month {
-    color: var(--text-secondary-dark, #d1d1d1);
+.dashboard-header {
+    background-color: #003049;
+    color: white;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    min-height: 80px;
 }
 
 .header-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    max-width: 1400px;
+    margin: 0 auto;
     width: 100%;
 }
 
 .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     flex: 1;
+}
+
+.brand-logo {
+    height: 40px;
+    width: 40px;
+}
+
+.brand-text h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+}
+
+.pro-badge {
+    background-color: var(--primary);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+.brand-tagline {
+    margin: 0;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .header-left {
@@ -64,8 +79,407 @@
     text-align: center;
 }
 
+    .header-left h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .header-left p {
+        margin: 0.2rem 0 0;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
 .header-actions {
     flex: 1;
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+}
+
+.user-dropdown {
+    position: relative;
+    cursor: pointer;
+}
+
+.user-avatar-container {
+    position: relative;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-status {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background-color: #4ade80;
+    border-radius: 50%;
+    border: 2px solid #1a365d;
+}
+
+.dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    min-width: 200px;
+    padding: 0.5rem 0;
+    z-index: 100;
+    display: none;
+}
+
+.user-dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+    .dropdown-item:hover {
+        background-color: var(--primary-dark);
+    }
+
+    .dropdown-item i {
+        margin-right: 0.5rem;
+        width: 20px;
+        text-align: center;
+    }
+
+.dropdown-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 0.5rem 0;
+}
+
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    background: var(--card-bg);
+    padding: 0.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1.5rem;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 6px;
+    background: #3a3a3a;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+    .filter-btn:hover {
+        background: var(--primary-dark);
+    }
+
+    .filter-btn.active {
+        background: var(--primary);
+        color: #fff;
+    }
+
+.hearing-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.hearing-item {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+    .hearing-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+.hearing-date {
+    text-align: center;
+    min-width: 60px;
+    padding: 0.5rem;
+    background: #3a3a3a;
+    border-radius: 6px;
+    margin-right: 1rem;
+}
+
+    .hearing-date .day {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--text-primary);
+    }
+
+    .hearing-date .month {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+.hearing-info {
+    flex: 1;
+}
+
+    .hearing-info h4 {
+        margin: 0 0 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .hearing-info p {
+        margin: 0.3rem 0;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+.hearing-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* General Card and Button Styles */
+.content-card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+    .card-header h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+.btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+
+.btn-outline-primary {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+    .btn-outline-primary:hover {
+        background: var(--primary);
+        color: #fff;
+    }
+
+.badge {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.bg-primary {
+    background: var(--primary);
+    color: #fff;
+}
+
+.bg-secondary {
+    background: #6c757d;
+    color: #fff;
+}
+
+.bg-warning {
+    background: #f6c23e;
+    color: #1a1a1a;
+}
+
+.bg-success {
+    background: #28a745;
+    color: #fff;
+}
+
+.bg-info {
+    background: #36b9cc;
+    color: #fff;
+}
+
+.bg-light {
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.4em;
+    border-color: var(--primary);
+    border-right-color: transparent;
+}
+
+.alert {
+    border-radius: 8px;
+    padding: 1rem;
+    font-size: 0.9rem;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.alert-danger {
+    background: #7a2d2d;
+    border-color: #a94442;
+}
+
+.alert-info {
+    background: #2d4b7a;
+    border-color: #3c8dbc;
+}
+
+.dark-mode .dropdown-menu {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+.dark-mode .dropdown-item {
+    color: var(--text-primary);
+}
+
+    .dark-mode .dropdown-item:hover {
+        background-color: var(--primary-dark);
+    }
+
+.dark-mode .dropdown-divider {
+    background-color: var(--border-color);
+}
+
+.dark-mode .hearing-item {
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+
+.dark-mode .hearing-date .month {
+    color: var(--text-secondary);
+}
+
+.dark-mode .hearing-info p {
+    color: var(--text-secondary);
+}
+
+@media (max-width: 992px) {
+    .header-left {
+        display: none;
+    }
+
+    .mobile-menu-toggle {
+        display: block;
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+    }
+
+    .header-container {
+        flex-wrap: wrap;
+    }
+
+    .header-brand,
+    .header-actions {
+        flex: 1 1 50%;
+    }
+
+    .filter-bar {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-container {
+        flex-direction: column;
+        text-align: center;
+        padding: 0 0.5rem;
+    }
+
+    .header-actions {
+        justify-content: center;
+    }
+
+    .hearing-list {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboard-header {
+        padding: 1rem 1rem;
+    }
+
+    .hearing-item {
+        padding: 1rem;
+    }
+
+    .btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .dashboard {
+        padding: 1rem 1rem 2rem;
+        padding-top: 90px;
+    }
 }
