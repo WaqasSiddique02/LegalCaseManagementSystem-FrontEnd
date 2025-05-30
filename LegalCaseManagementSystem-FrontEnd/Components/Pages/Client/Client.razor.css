@@ -1,4 +1,66 @@
-﻿.case-grid, .invoice-grid {
+﻿.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem 2rem;
+}
+
+.stat-card {
+    background-color: var(--card-bg);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-left: 0.25rem solid var(--card-color);
+}
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1.5rem 0 rgba(58, 59, 69, 0.2);
+    }
+
+.stat-icon {
+    font-size: 2rem;
+    color: white;
+    background-color: var(--card-color);
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-info h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.stat-info p {
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.stat-trend {
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+    .stat-trend.positive {
+        color: var(--success);
+    }
+
+    .stat-trend.negative {
+        color: var(--danger);
+    }
+
+.case-grid, .invoice-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
@@ -39,7 +101,7 @@
 
 .case-info p, .invoice-info p {
     margin: 0.3rem 0;
-    color: var(--text-secondary, #6c757d);
+    color: #d5dfe8;
 }
 
 .case-actions, .invoice-actions {

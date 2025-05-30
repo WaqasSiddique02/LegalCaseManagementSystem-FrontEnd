@@ -6,47 +6,6 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<div class="dashboard @(isDarkMode ? "dark-mode" : "")">
-    <header class="dashboard-header">
-        <div class="header-container">
-            <div class="header-brand">
-                <img src="/images/law.png" alt="Client Portal Logo" class="brand-logo" />
-                <div class="brand-text">
-                    <h1>Client Portal <span class="pro-badge">PRO</span></h1>
-                    <p class="brand-tagline">Legal Support • Client Services</p>
-                </div>
-            </div>
-
-            <div class="header-left">
-                <h1>My Invoices</h1>
-                <p class="text-muted">@user?.Username</p>
-            </div>
-
-            <div class="header-actions">
-                <div class="user-dropdown">
-                    <div class="user-avatar-container">
-                        <img src="https://ui-avatars.com/api/?name=@(user?.Username?.FirstOrDefault() ?? 'U')&background=4e73df&color=fff"
-                             class="user-avatar" />
-                        <span class="user-status"></span>
-                    </div>
-                    <div class="dropdown-menu">
-                        <a href="/update-password" class="dropdown-item">
-                            <i class="fas fa-cog"></i> Change Password
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <a href="/login" class="dropdown-item">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <button class="mobile-menu-toggle">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
-    </header>
-
     <div class="dashboard-grid">
         @if (isLoading)
         {
@@ -121,7 +80,6 @@
             </div>
         }
     </div>
-</div>
 
 @code {
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
@@ -235,11 +193,6 @@
         };
     }
 
-    private async Task ToggleDarkMode()
-    {
-        isDarkMode = !isDarkMode;
-        StateHasChanged();
-    }
 
     private void ViewInvoice(int invoiceId)
     {
