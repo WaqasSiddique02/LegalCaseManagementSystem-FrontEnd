@@ -1,13 +1,14 @@
 ﻿@page "/lawyer/{LawyerId:int}/cases/{caseId:int}"
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
-@inject IJSRuntime JSRuntime
 @inject DashboardState DashboardState
 @rendermode InteractiveServer
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using LegalCaseManagementSystem_FrontEnd.Models
 @using LegalCaseManagementSystem_FrontEnd.Services
+
+<LawyerHeader></LawyerHeader>
 
     <!-- Main Content -->
     <div class="dashboard-grid">
@@ -353,21 +354,19 @@
 
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
     private Case? caseDetails;
-    private bool isDarkMode = false;
     private bool isLoading = false;
     private string? errorMessage;
     private string activeTab = "CaseInfo";
     private bool isMobileMenuOpen = false;
 
     private static readonly JsonSerializerOptions jsonOptions = new()
-        {
-            PropertyNameCaseInsensitive = true,
-            Converters = { new JsonStringEnumConverter() }
-        };
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
 
     protected override async Task OnInitializedAsync()
     {
-        isDarkMode = DashboardState.IsDarkMode;
         DashboardState.LawyerId = LawyerId;
         if (string.IsNullOrEmpty(DashboardState.LawyerName))
         {
@@ -397,7 +396,6 @@
         catch (Exception ex)
         {
             errorMessage = $"Error loading lawyer details: {ex.Message}";
-            await JSRuntime.InvokeVoidAsync("console.log", $"LoadLawyerDetails error: {ex.Message}");
         }
     }
 
@@ -413,7 +411,6 @@
         catch (Exception ex)
         {
             errorMessage = $"Exception loading data: {ex.Message}";
-            await JSRuntime.InvokeVoidAsync("console.log", $"LoadData error: {ex.Message}");
         }
         finally
         {
@@ -434,7 +431,6 @@
                 {
                     errorMessage = $"Error loading case details: {response.StatusCode}";
                     caseDetails = null;
-                    await JSRuntime.InvokeVoidAsync("console.log", $"LoadCaseDetails error: {response.StatusCode}");
                     return;
                 }
 
@@ -446,7 +442,6 @@
                     {
                         errorMessage = "Case does not belong to this lawyer.";
                         caseDetails = null;
-                        await JSRuntime.InvokeVoidAsync("console.log", "Case does not belong to this lawyer.");
                         return;
                     }
                     caseDetails.CaseTasks = await LoadTasks(id);
@@ -465,7 +460,6 @@
                 {
                     errorMessage = "Case does not belong to this lawyer.";
                     caseDetails = null;
-                    await JSRuntime.InvokeVoidAsync("console.log", "Case does not belong to this lawyer.");
                     return;
                 }
             }
@@ -482,13 +476,11 @@
         {
             errorMessage = $"Data format error: {jsonEx.Message}";
             caseDetails = null;
-            await JSRuntime.InvokeVoidAsync("console.log", $"LoadCaseDetails JSON error: {jsonEx.Message}");
         }
         catch (Exception ex)
         {
             errorMessage = $"Exception loading case details: {ex.Message}";
             caseDetails = null;
-            await JSRuntime.InvokeVoidAsync("console.log", $"LoadCaseDetails error: {ex.Message}");
         }
     }
 
@@ -582,14 +574,6 @@
         };
     }
 
-    private async Task ToggleDarkMode()
-    {
-        isDarkMode = !isDarkMode;
-        DashboardState.IsDarkMode = isDarkMode;
-        DashboardState.NotifyStateChanged();
-        await JSRuntime.InvokeVoidAsync("updateTheme", isDarkMode);
-    }
-
     private void SetActiveTab(string tab)
     {
         activeTab = tab;
@@ -614,13 +598,11 @@
             else
             {
                 errorMessage = $"Error updating task: {await response.Content.ReadAsStringAsync()}";
-                await JSRuntime.InvokeVoidAsync("console.log", $"UpdateTaskStatus error: {await response.Content.ReadAsStringAsync()}");
             }
         }
         catch (Exception ex)
         {
             errorMessage = $"Exception updating task: {ex.Message}";
-            await JSRuntime.InvokeVoidAsync("console.log", $"UpdateTaskStatus error: {ex.Message}");
         }
         finally
         {
@@ -628,80 +610,71 @@
         }
     }
 
-    private async Task GoBack()
+    private void GoBack()
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"GoBack: Navigating to /lawyer/{LawyerId}/cases");
         DashboardState.Cases = DashboardState.Cases ?? new List<Case>();
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases");
     }
 
-    private async Task EditCase(int caseId)
+    private void EditCase(int caseId)
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"EditCase: Navigating to /lawyer/{LawyerId}/cases/{caseId}/edit");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/edit");
     }
 
-    private async Task AddNewTask()
+    private void AddNewTask()
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"AddNewTask: Navigating to /lawyer/{LawyerId}/cases/{caseId}/tasks/new");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/tasks/new");
     }
 
-    private async Task EditTask(CaseTask task)
+    private void EditTask(CaseTask task)
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"EditTask: Navigating to /lawyer/{LawyerId}/cases/{caseId}/tasks/{task.TaskId}/edit");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/tasks/{task.TaskId}/edit");
     }
 
-    private async Task AddNewHearing()
+    private void AddNewHearing()
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"AddNewHearing: Navigating to /lawyer/{LawyerId}/cases/{caseId}/hearings/new");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/hearings/new");
     }
 
-    private async Task EditHearing(Hearing hearing)
+    private void EditHearing(Hearing hearing)
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"EditHearing: Navigating to /lawyer/{LawyerId}/cases/{caseId}/hearings/{hearing.HearingId}/edit");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/hearings/{hearing.HearingId}/edit");
     }
 
-    private async Task AddNewDocument()
+    private void AddNewDocument()
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"AddNewDocument: Navigating to /lawyer/{LawyerId}/cases/{caseId}/documents/new");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/documents/new");
     }
 
-    private async Task ViewDocument(Document document)
+    private void ViewDocument(Document document)
     {
-        await JSRuntime.InvokeVoidAsync("alert", "Document viewing not implemented in this demo.");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/documents/{document.DocumentId}/view");
     }
 
-    private async Task DownloadDocument(Document document)
+    private void DownloadDocument(Document document)
     {
-        await JSRuntime.InvokeVoidAsync("alert", "Document download not implemented in this demo.");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/documents/{document.DocumentId}/download");
     }
 
-    private async Task AddNewInvoice()
+    private void AddNewInvoice()
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"AddNewInvoice: Navigating to /lawyer/{LawyerId}/cases/{caseId}/invoices/new");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/invoices/new");
     }
 
-    private async Task EditInvoice(Invoice invoice)
+    private void EditInvoice(Invoice invoice)
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"EditInvoice: Navigating to /lawyer/{LawyerId}/cases/{caseId}/invoices/{invoice.InvoiceId}/edit");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/invoices/{invoice.InvoiceId}/edit");
     }
 
-    private async Task ViewInvoice(Invoice invoice)
+    private void ViewInvoice(Invoice invoice)
     {
-        await JSRuntime.InvokeVoidAsync("alert", "Invoice viewing not implemented in this demo.");
+        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/invoices/{invoice.InvoiceId}/view");
     }
 
     private void ToggleMobileMenu()
     {
         isMobileMenuOpen = !isMobileMenuOpen;
-        // Implement mobile menu toggle logic if needed
+        // Mobile menu logic can be implemented in Blazor if needed
     }
 
     public void Dispose()

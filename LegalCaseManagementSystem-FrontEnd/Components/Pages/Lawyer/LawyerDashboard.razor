@@ -11,55 +11,63 @@
 
 <LawyerHeader></LawyerHeader>
     <div class="dashboard-grid">
-        <div class="stats-grid">
-            <div class="stat-card" style="--card-color: #4e73df">
-                <div class="stat-icon">
-                    <i class="fas fa-gavel"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>@ActiveCasesCount</h3>
-                    <p>Active Cases</p>
-                    <span class="stat-trend positive">
-                        <i class="fas fa-arrow-up"></i> @ActiveCasesTrend%
-                    </span>
-                </div>
+    <div class="stats-grid">
+        <!-- Open Cases Card -->
+        <div class="stat-card" style="--card-color: #4e73df">
+            <div class="stat-icon">
+                <i class="fas fa-folder-open"></i>
             </div>
-            <div class="stat-card" style="--card-color: #1cc88a">
-                <div class="stat-icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>@CompletedTasksCount</h3>
-                    <p>Tasks Completed</p>
-                    <span class="stat-trend positive">
-                        <i class="fas fa-arrow-up"></i> @CompletedTasksTrend%
-                    </span>
-                </div>
+            <div class="stat-info">
+                <h3>@OpenCasesCount</h3>
+                <p>Open Cases</p>
+                <span class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i> @OpenCasesTrend%
+                </span>
             </div>
-            <div class="stat-card" style="--card-color: #f6c23e">
-                <div class="stat-icon">
-                    <i class="fas fa-calendar-alt"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>@UpcomingHearingsCount</h3>
-                    <p>Upcoming Hearings</p>
-                    <span class="stat-trend negative">
-                        <i class="fas fa-arrow-down"></i> @HearingsTrend%
-                    </span>
-                </div>
+        </div>
+
+        <!-- Pending Cases Card -->
+        <div class="stat-card" style="--card-color: #f6c23e">
+            <div class="stat-icon">
+                <i class="fas fa-clock"></i>
             </div>
-            <div class="stat-card" style="--card-color: #e74a3b">
-                <div class="stat-icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="stat-info">
-                    <h3>@PendingTasksCount</h3>
-                    <p>Pending Tasks</p>
-                    <span class="stat-trend positive">
-                        <i class="fas fa-arrow-up"></i> @PendingTasksTrend%
-                    </span>
-                </div>
+            <div class="stat-info">
+                <h3>@PendingCasesCount</h3>
+                <p>Pending Cases</p>
+                <span class="stat-trend @(PendingCasesTrend > 0 ? "positive" : "negative")">
+                    <i class="fas @(PendingCasesTrend > 0 ? "fa-arrow-up" : "fa-arrow-down")"></i> @Math.Abs(PendingCasesTrend)%
+                </span>
             </div>
+        </div>
+
+        <!-- Closed Cases Card -->
+        <div class="stat-card" style="--card-color: #1cc88a">
+            <div class="stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>@ClosedCasesCount</h3>
+                <p>Closed Cases</p>
+                <span class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i> @ClosedCasesTrend%
+                </span>
+            </div>
+        </div>
+
+        <!-- Upcoming Hearings Card -->
+        <div class="stat-card" style="--card-color: #e74a3b">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="stat-info">
+                <h3>@UpcomingHearingsCount</h3>
+                <p>Upcoming Hearings</p>
+                <span class="stat-trend @(HearingsTrend > 0 ? "positive" : "negative")">
+                    <i class="fas @(HearingsTrend > 0 ? "fa-arrow-up" : "fa-arrow-down")"></i> @Math.Abs(HearingsTrend)%
+                </span>
+            </div>
+        </div>
+    </div>
         </div>
 
         <div class="content-grid">
@@ -222,55 +230,50 @@
                 </div>
             </div>
 
-            <div class="tasks-card">
-                <div class="card-header">
-                    <h3>Task Progress</h3>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-info">
-                        <span>@CompletedTasksCount/@TotalTasksCount tasks completed</span>
-                        <span>@CompletionPercentage%</span>
+    <div class="tasks-card">
+        <div class="card-header">
+            <h3>Recently Closed Cases</h3>
+            <NavLink class="btn btn-sm btn-primary" href="@($"/lawyer/{userId}/cases")">
+                View All
+            </NavLink>
+        </div>
+        <div class="closed-cases-list">
+            @if (DashboardState.IsLoading)
+            {
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
-                    <div class="progress">
-                        <div class="progress-bar" style="width: @CompletionPercentage%"
-                             role="progressbar" aria-valuenow="@CompletionPercentage"
-                             aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
                 </div>
-                <div class="task-list">
-                    @if (DashboardState.IsLoading)
-                    {
-                        <div class="text-center py-3">
-                            <div class="spinner-border spinner-border-sm" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
+            }
+            else if (RecentlyClosedCases.Any())
+            {
+                @foreach (var caseItem in RecentlyClosedCases)
+                {
+                    <div class="closed-case-item">
+                        <div class="case-icon">
+                            <i class="fas fa-check-circle text-success"></i>
                         </div>
-                    }
-                    else if (lawyerTasks.Any())
-                    {
-                        @foreach (var task in lawyerTasks.OrderByDescending(t => t.CreatedAt).Take(5))
-                        {
-                            <div class="task-item @(task.Status == "Completed" ? "completed" : "")">
-                                <label class="task-checkbox">
-                                    <input type="checkbox" checked="@(task.Status == "Completed")"
-                                           @onchange="@(() => ToggleTaskCompletion(task))" />
-                                    <span class="checkmark"></span>
-                                </label>
-                                <div class="task-content">
-                                    <h4>@task.Title</h4>
-                                    <p>@(task.Description ?? "No description")</p>
-                                </div>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <p class="text-muted text-center py-3">No tasks available.</p>
-                    }
-                </div>
-            </div>
+                        <div class="case-info">
+                            <h4>@caseItem.Title</h4>
+                            <p>
+                                <span class="text-muted">Client:</span> @(caseItem.Client?.FullName ?? "Not assigned")<br>
+                                <span class="text-muted">Closed:</span>
+                            </p>
+                        </div>
+                        <NavLink class="btn btn-sm btn-outline-primary" href="@($"/lawyer/{userId}/cases/{caseItem.CaseId}")">
+                            View
+                        </NavLink>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted text-center py-3">No recently closed cases.</p>
+            }
         </div>
     </div>
+        </div>
 
 @code {
     private ElementReference dashboardRef;
@@ -285,16 +288,32 @@
     public int userId { get; set; }
 
     // Stats calculations
-    private int ActiveCasesCount => lawyerCases.Count(c => c.Status == CaseStatus.Open || c.Status == CaseStatus.InProgress);
-    private int CompletedTasksCount => lawyerTasks.Count(t => t.Status == "Completed");
-    private int PendingTasksCount => lawyerTasks.Count(t => t.Status == "Pending");
+    private int OpenCasesCount => lawyerCases.Count(c =>
+      c.Status == CaseStatus.Open ||
+      c.Status.ToString().Equals("Open", StringComparison.OrdinalIgnoreCase));
+
+    private int PendingCasesCount => lawyerCases.Count(c =>
+        c.Status == CaseStatus.InProgress ||
+        c.Status.ToString().Equals("InProgress", StringComparison.OrdinalIgnoreCase) ||
+        c.Status.ToString().Equals("Pending", StringComparison.OrdinalIgnoreCase));
+
+    private int ClosedCasesCount => lawyerCases.Count(c =>
+        c.Status == CaseStatus.Completed ||
+        c.Status.ToString().Equals("Completed", StringComparison.OrdinalIgnoreCase) ||
+        c.Status.ToString().Equals("Closed", StringComparison.OrdinalIgnoreCase));
+    private List<Case> RecentlyClosedCases => lawyerCases
+    .Where(c => c.Status == CaseStatus.Completed ||
+                c.Status.ToString().Equals("Completed", StringComparison.OrdinalIgnoreCase) ||
+                c.Status.ToString().Equals("Closed", StringComparison.OrdinalIgnoreCase))
+    .OrderByDescending(c => c.EndDate ?? c.StartDate)
+    .Take(5)
+    .ToList();
     private int UpcomingHearingsCount => lawyerHearings.Count(h => h.HearingDate >= DateTime.Now);
     private int TotalTasksCount => lawyerTasks.Count;
-    private int CompletionPercentage => TotalTasksCount == 0 ? 0 : (int)Math.Round((double)CompletedTasksCount / TotalTasksCount * 100);
-    private int ActiveCasesTrend => CalculateTrend(ActiveCasesCount);
-    private int CompletedTasksTrend => CalculateTrend(CompletedTasksCount);
+    private int OpenCasesTrend => CalculateTrend(OpenCasesCount);
+    private int PendingCasesTrend => CalculateTrend(PendingCasesCount);
+    private int ClosedCasesTrend => CalculateTrend(ClosedCasesCount);
     private int HearingsTrend => CalculateTrend(UpcomingHearingsCount);
-    private int PendingTasksTrend => CalculateTrend(PendingTasksCount);
 
     protected override async Task OnInitializedAsync()
     {
@@ -518,12 +537,7 @@
         return activities.OrderByDescending(a => a.Timestamp).ToList();
     }
 
-    private async Task ToggleDarkMode()
-    {
-        DashboardState.IsDarkMode = !DashboardState.IsDarkMode;
-        DashboardState.NotifyStateChanged();
-        await JSRuntime.InvokeVoidAsync("updateTheme", DashboardState.IsDarkMode);
-    }
+ 
 
     private async Task ToggleTaskCompletion(CaseTask task)
     {
@@ -592,7 +606,6 @@
 
     private int CalculateTrend(int currentCount)
     {
-        // TODO: Implement proper trend calculation
         var random = new Random();
         return random.Next(1, 10);
     }
