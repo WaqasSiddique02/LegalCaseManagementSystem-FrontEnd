@@ -9,48 +9,6 @@
 @using LegalCaseManagementSystem_FrontEnd.Models
 @using LegalCaseManagementSystem_FrontEnd.Services
 
-<!-- Dashboard Container -->
-<div class="dashboard @(isDarkMode ? "dark-mode" : "")">
-    <!-- Header -->
-    <header class="dashboard-header">
-        <div class="header-container">
-            <div class="header-brand">
-                <img src="/images/logo.png" alt="Logo" class="brand-logo" />
-                <div class="brand-text">
-                    <h1>My Cases <span class="pro-badge">PRO</span></h1>
-                    <p class="brand-tagline">Manage your assigned cases</p>
-                </div>
-            </div>
-            <div class="header-actions">
-                <nav class="header-nav">
-                    <a class="nav-link" href="/lawyer/@LawyerId/cases">Cases</a>
-                    <a class="nav-link" href="/lawyer/@LawyerId/profile">Profile</a>
-                    <a class="nav-link" href="/dashboard">Dashboard</a>
-                </nav>
-                <div class="action-buttons">
-                    <button class="theme-toggle" @onclick="ToggleDarkMode" title="Toggle Theme">
-                        <i class="fas @(isDarkMode ? "fa-sun" : "fa-moon")"></i>
-                    </button>
-                    <div class="user-dropdown">
-                        <div class="user-avatar-container">
-                            <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName ?? "Lawyer")&background=4e73df&color=fff" class="user-avatar" />
-                            <span class="user-status"></span>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="/profile-details/@LawyerId"><i class="fas fa-user"></i> Profile</a>
-                            <a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                        </div>
-                    </div>
-                    <button class="mobile-menu-toggle" @onclick="ToggleMobileMenu">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
-
     <!-- Main Content -->
     <div class="dashboard-grid">
         @if (isLoading)
@@ -385,7 +343,6 @@
             </div>
         }
     </div>
-</div>
 
 @code {
     [Parameter]

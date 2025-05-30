@@ -9,59 +9,7 @@
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
-<div class="dashboard @(DashboardState.IsDarkMode ? "dark-mode" : "")" @ref="dashboardRef">
-    <header class="dashboard-header">
-        <div class="header-container">
-            <div class="header-brand">
-                <img src="/images/law.png" alt="The Legals Logo" class="brand-logo" />
-                <div class="brand-text">
-                    <h1>The Legals <span class="pro-badge">PRO</span></h1>
-                    <p class="brand-tagline">Legal Excellence • Trusted Advocacy</p>
-                </div>
-            </div>
-
-            <div class="header-actions">
-                <nav class="header-nav">
-                    <a href="#dashboard" class="nav-link active">Dashboard</a>
-                    <a href="@($"/lawyer/{userId}/cases")" class="nav-link">Cases</a>
-                    <a href="#clients" class="nav-link">Clients</a>
-                    <a href="#calendar" class="nav-link">Calendar</a>
-                    <a href="#documents" class="nav-link">Documents</a>
-                </nav>
-
-                <div class="action-buttons">
-                    <button class="theme-toggle" @onclick="ToggleDarkMode">
-                        <i class="fas @(DashboardState.IsDarkMode ? "fa-sun" : "fa-moon")"></i>
-                    </button>
-
-                    <div class="user-dropdown">
-                        <div class="user-avatar-container">
-                            <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName ?? "Lawyer")&background=4e73df&color=fff"
-                                 class="user-avatar" />
-                            <span class="user-status"></span>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a href="/profile-details/@userId" class="dropdown-item">
-                                <i class="fas fa-user"></i> My Profile
-                            </a>
-                            <a href="#" class="dropdown-item">
-                                <i class="fas fa-cog"></i> Settings
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item">
-                                <i class="fas fa-sign-out-alt"></i> Logout
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <button class="mobile-menu-toggle">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
-    </header>
-
+<LawyerHeader></LawyerHeader>
     <div class="dashboard-grid">
         <div class="stats-grid">
             <div class="stat-card" style="--card-color: #4e73df">
@@ -323,7 +271,6 @@
             </div>
         </div>
     </div>
-</div>
 
 @code {
     private ElementReference dashboardRef;

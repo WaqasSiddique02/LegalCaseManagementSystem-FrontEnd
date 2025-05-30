@@ -1,0 +1,232 @@
+﻿.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem 2rem;
+}
+
+.stat-card {
+    background-color: var(--card-bg);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-left: 0.25rem solid var(--card-color);
+}
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1.5rem 0 rgba(58, 59, 69, 0.2);
+    }
+
+.stat-icon {
+    font-size: 2rem;
+    color: white;
+    background-color: var(--card-color);
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-info h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.stat-info p {
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.stat-trend {
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+    .stat-trend.positive {
+        color: var(--success);
+    }
+
+    .stat-trend.negative {
+        color: var(--danger);
+    }
+
+.content-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.cases-section {
+    background-color: #1e2125;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+    .section-header h2 {
+        color: #e0e0e0;
+        font-size: 1.8rem;
+        margin: 0;
+    }
+
+.case-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.case-count {
+    color: #a0a0a0; 
+    font-size: 1rem;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-primary {
+    background-color: #007bff; 
+    color: #ffffff;
+    border: none;
+}
+
+    .btn-primary:hover {
+        background-color: #0056b3; 
+        transform: translateY(-2px);
+    }
+
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+
+.spinner-border {
+    color: #007bff;
+    width: 3rem;
+    height: 3rem;
+}
+
+.text-center.py-5 {
+    color: #a0a0a0;
+}
+
+.alert {
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.alert-danger {
+    background-color: #4a1a1a;
+    color: #ff9999; 
+    border: 1px solid #7a2e2e;
+}
+
+    .alert-danger a.btn-primary {
+        background-color: #007bff;
+        color: #ffffff;
+    }
+
+        .alert-danger a.btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+.cases-table-container {
+    overflow-x: auto;
+}
+
+.cases-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #e0e0e0;
+    background-color: #2a2e33; 
+}
+
+    .cases-table th,
+    .cases-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #3a3f44;
+    }
+
+    .cases-table th {
+        background-color: #1e2125;
+        color: #ffffff;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+
+    .cases-table tr:hover {
+        background-color: #35383d; 
+    }
+
+.case-status {
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.no-cases {
+    text-align: center;
+    padding: 40px 20px;
+    color: #a0a0a0;
+}
+
+    .no-cases i {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        color: #007bff;
+    }
+
+    .no-cases p {
+        font-size: 1.1rem;
+    }
+
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .case-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .cases-table th,
+    .cases-table td {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+}

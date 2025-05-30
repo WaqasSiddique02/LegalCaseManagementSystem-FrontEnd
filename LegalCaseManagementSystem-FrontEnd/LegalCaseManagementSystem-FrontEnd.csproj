@@ -9,7 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\css\Lawyer\" />
+    <Compile Remove="wwwroot\css\Lawyer\**" />
+    <Content Remove="wwwroot\css\Lawyer\**" />
+    <EmbeddedResource Remove="wwwroot\css\Lawyer\**" />
+    <None Remove="wwwroot\css\Lawyer\**" />
   </ItemGroup>
 
 </Project>
