@@ -10,7 +10,7 @@
 @implements IDisposable
 
 <LawyerHeader></LawyerHeader>
-    <div class="dashboard-grid">
+<div class="dashboard-grid">
     <div class="stats-grid">
         <!-- Open Cases Card -->
         <div class="stat-card" style="--card-color: #4e73df">
@@ -68,172 +68,172 @@
             </div>
         </div>
     </div>
-        </div>
+</div>
 
-        <div class="content-grid">
-            <div class="cases-section">
-                <div class="section-header">
-                    <h2>My Cases</h2>
-                    <div class="case-controls">
-                        <div class="case-count">Total: @lawyerCases.Count</div>
-                        <NavLink class="btn btn-primary btn-sm" href="@($"/lawyer/{userId}/cases")" aria-label="View all cases">
-                            <i class="fas fa-list"></i> View All Cases
-                        </NavLink>
-                    </div>
+<div class="content-grid">
+    <div class="cases-section">
+        <div class="section-header">
+            <h2>My Cases</h2>
+            <div class="case-controls">
+                <div class="case-count">Total: @lawyerCases.Count</div>
+                <NavLink class="btn btn-primary btn-sm" href="@($"/lawyer/{DashboardState.LawyerId}/cases")" aria-label="View all cases">
+                    <i class="fas fa-list"></i> View All Cases
+                </NavLink>
+            </div>
+        </div>
+        @if (DashboardState.IsLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
-                @if (DashboardState.IsLoading)
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(DashboardState.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @if (DashboardState.ErrorMessage.Contains("NotFound") || DashboardState.ErrorMessage.Contains("not a lawyer"))
                 {
-                    <div class="text-center py-5">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                }
-                else if (!string.IsNullOrEmpty(DashboardState.ErrorMessage))
-                {
-                    <div class="alert alert-danger" role="alert">
-                        @if (DashboardState.ErrorMessage.Contains("NotFound") || DashboardState.ErrorMessage.Contains("not a lawyer"))
-                        {
-                            <p>Lawyer not found or user is not a lawyer. Please verify the user ID or contact support.</p>
-                            <a href="/lawyers" class="btn btn-primary">Back to Dashboard</a>
-                        }
-                        else
-                        {
-                            <p>@DashboardState.ErrorMessage</p>
-                        }
-                    </div>
-                }
-                else if (lawyerCases.Any())
-                {
-                    <div class="cases-table-container">
-                        <table class="cases-table" role="grid" aria-label="My Cases">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Case Name</th>
-                                    <th scope="col">Client</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Start Date</th>
-                                    <th scope="col">End Date</th>
-                                    <th scope="col">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var caseItem in lawyerCases)
-                                {
-                                    <tr>
-                                        <td>@caseItem.Title</td>
-                                        <td>@(caseItem.Client?.FullName ?? "Not assigned")</td>
-                                        <td>
-                                            <span class="case-status @GetStatusClass(caseItem.Status)">
-                                                @GetStatusText(caseItem.Status)
-                                            </span>
-                                        </td>
-                                        <td>@caseItem.StartDate.ToString("dd MMM yyyy")</td>
-                                        <td>@(caseItem.EndDate?.ToString("dd MMM yyyy") ?? "-")</td>
-                                        <td>
-                                            <NavLink class="btn btn-primary btn-sm" href="@($"/lawyer/{userId}/cases/{caseItem.CaseId}")">
-                                                View Details
-                                            </NavLink>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                    <p>Lawyer not found or user is not a lawyer. Please verify the user ID or contact support.</p>
+                    <a href="/lawyers" class="btn btn-primary">Back to Dashboard</a>
                 }
                 else
                 {
-                    <div class="no-cases">
-                        <i class="fas fa-folder-open"></i>
-                        <p>No cases assigned yet</p>
-                    </div>
+                    <p>@DashboardState.ErrorMessage</p>
                 }
             </div>
-
-            <div class="hearings-card">
-                <div class="card-header">
-                    <h3>Upcoming Hearings</h3>
-                    <NavLink class="btn btn-sm btn-primary" href="@($"/lawyer/{userId}/cases")">
-                        View All
-                    </NavLink>
-                </div>
-                <div class="hearings-list">
-                    @if (DashboardState.IsLoading)
-                    {
-                        <div class="text-center py-3">
-                            <div class="spinner-border spinner-border-sm" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
-                        </div>
-                    }
-                    else if (lawyerHearings.Any(h => h.HearingDate >= DateTime.Now))
-                    {
-                        @foreach (var hearing in lawyerHearings
-                       .Where(h => h.HearingDate >= DateTime.Now)
-                       .OrderBy(h => h.HearingDate)
-                       .Take(3))
+        }
+        else if (lawyerCases.Any())
+        {
+            <div class="cases-table-container">
+                <table class="cases-table" role="grid" aria-label="My Cases">
+                    <thead>
+                        <tr>
+                            <th scope="col">Case Name</th>
+                            <th scope="col">Client</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Start Date</th>
+                            <th scope="col">End Date</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var caseItem in lawyerCases)
                         {
-                            <div class="hearing-item">
-                                <div class="hearing-date">
-                                    <span class="day">@hearing.HearingDate.ToString("dd")</span>
-                                    <span class="month">@hearing.HearingDate.ToString("MMM")</span>
-                                </div>
-                                <div class="hearing-info">
-                                    <h4>@(lawyerCases.FirstOrDefault(c => c.CaseId == hearing.CaseId)?.Title ?? "Untitled Case")</h4>
-                                    <p>
-                                        <i class="fas fa-clock"></i> @hearing.HearingDate.ToString("h:mm tt") •
-                                        <i class="fas fa-map-marker-alt"></i> @hearing.Venue
-                                    </p>
-                                </div>
-                            </div>
+                            <tr>
+                                <td>@caseItem.Title</td>
+                                <td>@(caseItem.Client?.FullName ?? "Not assigned")</td>
+                                <td>
+                                    <span class="case-status @GetStatusClass(caseItem.Status)">
+                                        @GetStatusText(caseItem.Status)
+                                    </span>
+                                </td>
+                                <td>@caseItem.StartDate.ToString("dd MMM yyyy")</td>
+                                <td>@(caseItem.EndDate?.ToString("dd MMM yyyy") ?? "-")</td>
+                                <td>
+                                    <NavLink class="btn btn-primary btn-sm" href="@($"/lawyer/{DashboardState.LawyerId}/cases/{caseItem.CaseId}")">
+                                        View Details
+                                    </NavLink>
+                                </td>
+                            </tr>
                         }
-                    }
-                    else
-                    {
-                        <p class="text-muted text-center py-3">No upcoming hearings available.</p>
-                    }
-                </div>
+                    </tbody>
+                </table>
             </div>
+        }
+        else
+        {
+            <div class="no-cases">
+                <i class="fas fa-folder-open"></i>
+                <p>No cases assigned yet</p>
+            </div>
+        }
+    </div>
 
-            <div class="activity-card">
-                <div class="card-header">
-                    <h3>Recent Activity</h3>
+    <div class="hearings-card">
+        <div class="card-header">
+            <h3>Upcoming Hearings</h3>
+            <NavLink class="btn btn-sm btn-primary" href="@($"/lawyer/{DashboardState.LawyerId}/cases")">
+                View All
+            </NavLink>
+        </div>
+        <div class="hearings-list">
+            @if (DashboardState.IsLoading)
+            {
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
-                <div class="activity-list">
-                    @if (DashboardState.IsLoading)
-                    {
-                        <div class="text-center py-3">
-                            <div class="spinner-border spinner-border-sm" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
+            }
+            else if (lawyerHearings.Any(h => h.HearingDate >= DateTime.Now))
+            {
+                @foreach (var hearing in lawyerHearings
+            .Where(h => h.HearingDate >= DateTime.Now)
+            .OrderBy(h => h.HearingDate)
+            .Take(3))
+                {
+                    <div class="hearing-item">
+                        <div class="hearing-date">
+                            <span class="day">@hearing.HearingDate.ToString("dd")</span>
+                            <span class="month">@hearing.HearingDate.ToString("MMM")</span>
                         </div>
-                    }
-                    else if (recentActivities.Any())
-                    {
-                        @foreach (var activity in recentActivities.Take(5))
-                        {
-                            <div class="activity-item">
-                                <div class="activity-icon">
-                                    <i class="@activity.Icon"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <p>@activity.Description</p>
-                                    <small class="text-muted">@activity.Timestamp.ToString("g")</small>
-                                </div>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <p class="text-muted text-center py-3">No recent activity.</p>
-                    }
+                        <div class="hearing-info">
+                            <h4>@(lawyerCases.FirstOrDefault(c => c.CaseId == hearing.CaseId)?.Title ?? "Untitled Case")</h4>
+                            <p>
+                                <i class="fas fa-clock"></i> @hearing.HearingDate.ToString("h:mm tt") •
+                                <i class="fas fa-map-marker-alt"></i> @hearing.Venue
+                            </p>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted text-center py-3">No upcoming hearings available.</p>
+            }
+        </div>
+    </div>
+
+    <div class="activity-card">
+        <div class="card-header">
+            <h3>Recent Activity</h3>
+        </div>
+        <div class="activity-list">
+            @if (DashboardState.IsLoading)
+            {
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
-            </div>
+            }
+            else if (recentActivities.Any())
+            {
+                @foreach (var activity in recentActivities.Take(5))
+                {
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="@activity.Icon"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>@activity.Description</p>
+                            <small class="text-muted">@activity.Timestamp.ToString("g")</small>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted text-center py-3">No recent activity.</p>
+            }
+        </div>
+    </div>
 
     <div class="tasks-card">
         <div class="card-header">
             <h3>Recently Closed Cases</h3>
-            <NavLink class="btn btn-sm btn-primary" href="@($"/lawyer/{userId}/cases")">
+            <NavLink class="btn btn-sm btn-primary" href="@($"/lawyer/{DashboardState.LawyerId}/cases")">
                 View All
             </NavLink>
         </div>
@@ -261,8 +261,8 @@
                                 <span class="text-muted">Closed:</span>
                             </p>
                         </div>
-                        <NavLink class="btn btn-sm btn-outline-primary" href="@($"/lawyer/{userId}/cases/{caseItem.CaseId}")">
-                            View
+                        <NavLink class="btn btn-primary btn-sm" href="@($"/lawyer/{DashboardState.LawyerId}/cases/{caseItem.CaseId}")">
+                            View Details
                         </NavLink>
                     </div>
                 }
@@ -273,7 +273,7 @@
             }
         </div>
     </div>
-        </div>
+</div>
 
 @code {
     private ElementReference dashboardRef;
@@ -314,6 +314,7 @@
     private int PendingCasesTrend => CalculateTrend(PendingCasesCount);
     private int ClosedCasesTrend => CalculateTrend(ClosedCasesCount);
     private int HearingsTrend => CalculateTrend(UpcomingHearingsCount);
+    private Lawyer currentLawyer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -376,8 +377,8 @@
                         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
                     }) ?? new();
 
-            var lawyer = lawyers.FirstOrDefault(l => l.UserId == userId);
-            if (lawyer == null)
+            currentLawyer = lawyers.FirstOrDefault(l => l.UserId == userId);
+            if (currentLawyer == null)
             {
                 DashboardState.ErrorMessage = $"No lawyer found for userId: {userId}";
                 Console.WriteLine($"Lawyer not found for userId: {userId}");
@@ -386,8 +387,8 @@
             }
 
             // Step 4: Set lawyer details
-            DashboardState.LawyerId = lawyer.LawyerId;
-            DashboardState.LawyerName = lawyer.FullName ?? "Lawyer";
+            DashboardState.LawyerId = currentLawyer.LawyerId;
+            DashboardState.LawyerName = currentLawyer.FullName ?? "Lawyer";
 
             // Step 5: Fetch cases for this lawyerId
             var casesResponse = await Http.GetAsync("/api/Cases?include=client");
@@ -407,7 +408,7 @@
                         Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
                     }) ?? new();
 
-            lawyerCases = allCases.Where(c => c.LawyerId == lawyer.LawyerId).ToList();
+            lawyerCases = allCases.Where(c => c.LawyerId == currentLawyer.LawyerId).ToList();
             DashboardState.Cases = lawyerCases;
 
             foreach (var caseItem in lawyerCases)
@@ -479,8 +480,14 @@
 
     private void NavigateToCases()
     {
-        DashboardState.Cases = lawyerCases;
-        Navigation.NavigateTo($"/lawyer/{userId}/cases");
+        if (DashboardState.LawyerId > 0)
+        {
+            Navigation.NavigateTo($"/lawyer/{DashboardState.LawyerId}/cases");
+        }
+        else
+        {
+            Console.WriteLine("Cannot navigate - lawyer ID not available");
+        }
     }
 
     private List<DashboardState.Activity> GenerateRecentActivities()
@@ -575,13 +582,13 @@
         }
     }
 
-    private async Task ViewCaseDetails(int caseId)
+    private void ViewCaseDetails(int caseId)
     {
-        Console.WriteLine($"ViewCase: Navigating to /lawyer/{userId}/cases/{caseId}");
-        await JSRuntime.InvokeVoidAsync("console.log", $"ViewCase: Navigating to /lawyer/{userId}/cases/{caseId}");
-        Navigation.NavigateTo($"/lawyer/{userId}/cases/{caseId}");
+        if (DashboardState.LawyerId > 0)
+        {
+            Navigation.NavigateTo($"/lawyer/{DashboardState.LawyerId}/cases/{caseId}");
+        }
     }
-
     private string GetStatusClass(CaseStatus status)
     {
         return status switch

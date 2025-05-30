@@ -1,173 +1,127 @@
 ﻿@page "/lawyer/{LawyerId:int}/cases"
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
-@inject IJSRuntime JSRuntime
 @inject DashboardState DashboardState
-@rendermode InteractiveServer
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using LegalCaseManagementSystem_FrontEnd.Models
 @using LegalCaseManagementSystem_FrontEnd.Services
 
-<!-- Dashboard Container -->
-<div class="dashboard @(isDarkMode ? "dark-mode" : "")">
-    <!-- Header -->
-    <header class="dashboard-header">
-        <div class="header-container">
-            <div class="header-brand">
-                <img src="/images/logo.png" alt="Logo" class="brand-logo" />
-                <div class="brand-text">
-                    <h1>My Cases <span class="pro-badge">PRO</span></h1>
-                    <p class="brand-tagline">Manage your assigned cases</p>
-                </div>
-            </div>
-            <div class="header-actions">
-                <nav class="header-nav">
-                    <a class="nav-link active" href="/lawyer/@LawyerId/cases">Cases</a>
-                    <a class="nav-link" href="/profile-details/@LawyerId">Profile</a>
-                    <a class="nav-link" href="/lawyer/@LawyerId">Dashboard</a>
-                </nav>
-                <div class="action-buttons">
-                    <button class="theme-toggle" @onclick="ToggleDarkMode" title="Toggle Theme">
-                        <i class="fas @(isDarkMode ? "fa-sun" : "fa-moon")"></i>
-                    </button>
-                    <div class="user-dropdown">
-                        <div class="user-avatar-container">
-                            <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName ?? "Lawyer")&background=4e73df&color=fff" class="user-avatar" />
-                            <span class="user-status"></span>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="/profile-details/@LawyerId"><i class="fas fa-user"></i> Profile</a>
-                            <a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                        </div>
+<LawyerHeader></LawyerHeader>
+
+<div class="dashboard-grid">
+    <div class="content-grid">
+        <div class="management-actions">
+            <div class="row align-items-center">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control" placeholder="Search cases..." @bind="searchTerm" @bind:event="oninput" />
                     </div>
-                    <button class="mobile-menu-toggle" @onclick="ToggleMobileMenu">
-                        <i class="fas fa-bars"></i>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-filter"></i>
+                        </span>
+                        <select class="form-select" @bind="selectedStatus">
+                            <option value="">All</option>
+                            <option value="Open">Open</option>
+                            <option value="InProgress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <button class="btn btn-primary" @onclick="AddNewCase">
+                        <i class="fas fa-plus"></i> New Case
                     </button>
                 </div>
             </div>
         </div>
-    </header>
 
-
-
-    <div class="dashboard-grid">
-        <div class="content-grid">
-            <div class="management-actions">
-                <div class="row align-items-center">
-                    <div class="col-md-4 mb-3 mb-md-0">
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="bi bi-search"></i>
-                            </span>
-                            <input type="text" class="form-control" placeholder="Search cases..." @bind="searchTerm" @bind:event="oninput" />
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3 mb-md-0">
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="bi bi-filter"></i>
-                            </span>
-                            <select class="form-select" @bind="selectedStatus">
-                                <option value="">All</option>
-                                <option value="Open">Open</option>
-                                <option value="InProgress">In Progress</option>
-                                <option value="Completed">Completed</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-4 text-md-end">
-                        <button class="btn btn-primary" @onclick="AddNewCase">
-                            <i class="fas fa-plus"></i> New Case
-                        </button>
-                    </div>
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
-
-            @if (isLoading)
-            {
-                <div class="text-center py-5">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            }
-            else if (errorMessage != null)
-            {
-                <div class="alert alert-danger" role="alert">
-                    @errorMessage
-                </div>
-            }
-            else
-            {
-                <div class="case-list-container">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead>
+        }
+        else if (errorMessage != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                @errorMessage
+            </div>
+        }
+        else
+        {
+            <div class="case-list-container">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">Case ID</th>
+                                <th scope="col">Title</th>
+                                <th scope="col">Description</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Start Date</th>
+                                <th scope="col">Client</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var caseItem in FilteredCases)
+                            {
                                 <tr>
-                                    <th scope="col">Case ID</th>
-                                    <th scope="col">Title</th>
-                                    <th scope="col">Description</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Start Date</th>
-                                    <th scope="col">Client</th>
-                                    <th scope="col">Actions</th>
+                                    <td>@caseItem.CaseId</td>
+                                    <td>@caseItem.Title</td>
+                                    <td>@caseItem.Description</td>
+                                    <td>
+                                        <span class="badge @(GetStatusBadgeClass(caseItem.Status))">
+                                            @GetStatusText(caseItem.Status)
+                                        </span>
+                                    </td>
+                                    <td>@caseItem.StartDate.ToString("dd MMM yyyy")</td>
+                                    <td>@(caseItem.Client?.FullName ?? "Not assigned")</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-sm" @onclick="() => ViewCase(caseItem.CaseId)" title="View Details">
+                                            <i class="bi bi-eye"></i> View
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => EditCase(caseItem.CaseId)" title="Edit Case">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var caseItem in FilteredCases)
-                                {
-                                    <tr>
-                                        <td>@caseItem.CaseId</td>
-                                        <td>@caseItem.Title</td>
-                                        <td>@caseItem.Description</td>
-                                        <td>
-                                            <span class="badge @(GetStatusBadgeClass(caseItem.Status))">
-                                                @GetStatusText(caseItem.Status)
-                                            </span>
-                                        </td>
-                                        <td>@caseItem.StartDate.ToString("dd MMM yyyy")</td>
-                                        <td>@(caseItem.Client?.FullName ?? "Not assigned")</td>
-                                        <td>
-                                            <button class="btn btn-primary btn-sm" @onclick="() => ViewCase(caseItem.CaseId)" title="View Details">
-                                                <i class="bi bi-eye"></i> View
-                                            </button>
-                                            <button class="btn btn-outline-primary btn-sm" @onclick="() => EditCase(caseItem.CaseId)" title="Edit Case">
-                                                <i class="fas fa-edit"></i> Edit
-                                            </button>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                    @if (FilteredCases.Count == 0)
-                    {
-                        <div class="no-cases">
-                            <i class="fas fa-folder-open"></i>
-                            <p>No cases found matching your criteria.</p>
-                        </div>
-                    }
+                            }
+                        </tbody>
+                    </table>
                 </div>
-            }
-        </div>
+                @if (FilteredCases.Count == 0)
+                {
+                    <div class="no-cases">
+                        <i class="fas fa-folder-open"></i>
+                        <p>No cases found matching your criteria.</p>
+                    </div>
+                }
+            </div>
+        }
     </div>
-    </div>
+</div>
 
 @code {
     [Parameter]
     public int LawyerId { get; set; }
 
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
-    private List<Case> cases = new();
+    private List<Case> allCases = new();
+    private List<Case> lawyerCases = new();
     private string searchTerm = string.Empty;
     private string selectedStatus = string.Empty;
-    private bool isDarkMode = false;
     private bool isLoading = false;
     private string? errorMessage;
-    private bool isMobileMenuOpen = false;
 
     private static readonly JsonSerializerOptions jsonOptions = new()
         {
@@ -177,7 +131,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        isDarkMode = DashboardState.IsDarkMode;
         DashboardState.LawyerId = LawyerId;
         if (string.IsNullOrEmpty(DashboardState.LawyerName))
         {
@@ -202,7 +155,6 @@
         catch (Exception ex)
         {
             errorMessage = $"Error loading lawyer details: {ex.Message}";
-            await JSRuntime.InvokeVoidAsync("console.log", $"LoadLawyerDetails error: {ex.Message}");
         }
     }
 
@@ -218,7 +170,6 @@
         catch (Exception ex)
         {
             errorMessage = $"Exception loading data: {ex.Message}";
-            await JSRuntime.InvokeVoidAsync("console.log", $"LoadData error: {ex.Message}");
         }
         finally
         {
@@ -229,29 +180,24 @@
 
     private async Task LoadCases()
     {
-        if (DashboardState.Cases?.Any() == true && DashboardState.LawyerId == LawyerId)
+        var casesResponse = await Http.GetAsync("/api/Cases?include=client");
+        if (!casesResponse.IsSuccessStatusCode)
         {
-            cases = DashboardState.Cases;
+            errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
+            return;
         }
-        else
-        {
-            var casesResponse = await Http.GetAsync("/api/Cases?include=client");
-            if (!casesResponse.IsSuccessStatusCode)
-            {
-                errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
-                await JSRuntime.InvokeVoidAsync("console.log", $"LoadCases error: {casesResponse.StatusCode}");
-                return;
-            }
 
-            var casesContent = await casesResponse.Content.ReadAsStringAsync();
-            var allCases = JsonSerializer.Deserialize<List<Case>>(casesContent, jsonOptions) ?? new();
-            cases = allCases.Where(c => c.LawyerId == LawyerId).ToList();
-            DashboardState.Cases = cases;
-            DashboardState.LawyerId = LawyerId;
-        }
+        var casesContent = await casesResponse.Content.ReadAsStringAsync();
+        allCases = JsonSerializer.Deserialize<List<Case>>(casesContent, jsonOptions) ?? new();
+
+        // Filter cases by the current lawyer's ID
+        lawyerCases = allCases.Where(c => c.LawyerId == LawyerId).ToList();
+
+        DashboardState.Cases = lawyerCases;
+        DashboardState.LawyerId = LawyerId;
     }
 
-    private List<Case> FilteredCases => cases
+    private List<Case> FilteredCases => lawyerCases
         .Where(c => (string.IsNullOrEmpty(selectedStatus) || c.Status.ToString() == selectedStatus) &&
                     (string.IsNullOrEmpty(searchTerm) ||
                      c.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
@@ -281,36 +227,19 @@
         };
     }
 
-    private async Task ToggleDarkMode()
+    private void ViewCase(int caseId)
     {
-        isDarkMode = !isDarkMode;
-        DashboardState.IsDarkMode = isDarkMode;
-        DashboardState.NotifyStateChanged();
-        await JSRuntime.InvokeVoidAsync("updateTheme", isDarkMode);
-    }
-
-    private async Task ViewCase(int caseId)
-    {
-        await JSRuntime.InvokeVoidAsync("console.log", $"ViewCase: Navigating to /lawyer/{LawyerId}/cases/{caseId}");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}");
     }
 
-    private async Task EditCase(int caseId)
+    private void EditCase(int caseId)
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"EditCase: Navigating to /lawyer/{LawyerId}/cases/{caseId}/edit");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/edit");
     }
 
-    private async Task AddNewCase()
+    private void AddNewCase()
     {
-        await JSRuntime.InvokeVoidAsync("console.log", $"AddNewCase: Navigating to /lawyer/{LawyerId}/cases/new");
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/new");
-    }
-
-    private void ToggleMobileMenu()
-    {
-        isMobileMenuOpen = !isMobileMenuOpen;
-        // Implement mobile menu toggle logic if needed
     }
 
     public void Dispose()
