@@ -1,69 +1,106 @@
-﻿/* Override content-grid for case list */
-.content-grid {
+﻿.content-grid {
     grid-template-columns: 1fr;
-    padding: 2rem;
+    padding: 1rem;
 }
 
-/* Management Actions */
 .management-actions {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
 }
 
-/* Case List Container */
 .case-list-container {
-    width: 90%;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 1200px; 
+    height: 600px; 
+    margin: 0 auto; 
+    overflow: auto;
 }
 
-/* Table Styles */
+.table-responsive {
+    width: 100%;
+    max-width: 1200px;
+    height: 500px; 
+    overflow-x: auto; 
+    overflow-y: auto; 
+    border-radius: 8px;
+}
+
 .table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    background-color: var(--card-bg);
     border-radius: 8px;
     overflow: hidden;
 }
+
+    .table th:nth-child(1), 
+    .table td:nth-child(1) {
+        width: 10%;
+    }
+
+    .table th:nth-child(2), 
+    .table td:nth-child(2) {
+        width: 15%;
+    }
+
+    .table th:nth-child(3), 
+    .table td:nth-child(3) {
+        width: 30%; 
+    }
+
+    .table th:nth-child(4), 
+    .table td:nth-child(4) {
+        width: 12%;
+    }
+
+    .table th:nth-child(5), 
+    .table td:nth-child(5) {
+        width: 12%;
+    }
+
+    .table th:nth-child(6), 
+    .table td:nth-child(6) {
+        width: 12%;
+    }
+
+    .table th:nth-child(7), 
+    .table td:nth-child(7) {
+        width: 10%;
+    }
 
     .table th,
     .table td {
         padding: 1rem;
         text-align: left;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid #444444;
     }
 
     .table th {
-        background-color: var(--gray-light);
+        background-color: #000000;
         font-weight: 700;
         text-transform: uppercase;
-        font-size: 0.85rem;
+        font-size: 0.9rem;
+        color: #ffffff;
     }
 
-.dark-mode .table th {
-    background-color: var(--border-color);
-}
-
-.table td {
-    vertical-align: middle;
-    font-weight: 500;
-    color: #fff;
-}
+    .table td {
+        vertical-align: middle;
+        font-weight: 500;
+        color: #e0e0e0;
+        background-color: #333333;
+    }
 
 .table-striped tbody tr:nth-of-type(odd) {
-    background-color: rgba(0, 0, 0, 0.02);
-
+    background-color: #3a3a3a;
 }
 
 .table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: #4a4a4a;
+    transition: background-color 0.3s ease;
 }
 
-.table-responsive {
-    border-radius: 8px;
-    overflow-x: auto;
-}
 
-/* Badges */
 .badge {
     padding: 0.5rem 1rem;
     border-radius: 20px;
@@ -72,21 +109,23 @@
 }
 
 .status-open {
-    background-color: rgba(78, 115, 223, 0.1);
-    color: var(--primary);
+    background-color: #ff6f6122;
+    color: #ff6f61;
+    border: 1px solid #ff6f61;
 }
 
 .status-completed {
-    background-color: rgba(28, 200, 138, 0.1);
-    color: var(--success);
+    background-color: #ffb30022;
+    color: #ffb300;
+    border: 1px solid #ffb300;
 }
 
 .status-in-progress {
-    background-color: rgba(246, 194, 62, 0.1);
-    color: var(--warning);
+    background-color: #ff910022;
+    color: #ff9100;
+    border: 1px solid #ff9100;
 }
 
-/* No Cases */
 .no-cases {
     display: flex;
     flex-direction: column;
@@ -94,19 +133,26 @@
     justify-content: center;
     padding: 2.5rem 1.5rem;
     text-align: center;
-    color: var(--text-muted);
+    color: #aaaaaa;
+    background-color: #2e2e2e;
+    border-radius: 8px;
 }
 
     .no-cases i {
         font-size: 2rem;
         margin-bottom: 0.75rem;
-        opacity: 0.5;
+        color: #ff8a65;
     }
 
-/* Responsive */
 @media (max-width: 768px) {
     .case-list-container {
-        width: 100%;
+        max-width: 100%; 
+        height: 400px; 
+    }
+
+    .table-responsive {
+        max-width: 100%;
+        height: 350px;
     }
 
     .table th,
@@ -116,13 +162,31 @@
     }
 
     .content-grid {
-        padding: 1rem;
+        padding: 0.5rem;
+    }
+
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        width: 25%; 
     }
 }
 
 @media (max-width: 576px) {
+    .case-list-container {
+        height: 300px;
+    }
+
+    .table-responsive {
+        height: 250px;
+    }
+
     .table th,
     .table td {
         font-size: 0.8125rem;
     }
+
+        .table th:nth-child(3),
+        .table td:nth-child(3) {
+            width: 20%; 
+        }
 }
