@@ -35,9 +35,7 @@
                     </div>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary" @onclick="AddNewCase">
-                        <i class="fas fa-plus"></i> New Case
-                    </button>
+                
                 </div>
             </div>
         </div>
@@ -87,12 +85,10 @@
                                     <td>@caseItem.StartDate.ToString("dd MMM yyyy")</td>
                                     <td>@(caseItem.Client?.FullName ?? "Not assigned")</td>
                                     <td>
-                                        <button class="btn btn-primary btn-sm" @onclick="() => ViewCase(caseItem.CaseId)" title="View Details">
+                                          <NavLink class="btn btn-primary btn-sm" href="@($"/lawyer/{DashboardState.LawyerId}/cases/{caseItem.CaseId}")">
                                             <i class="bi bi-eye"></i> View
-                                        </button>
-                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => EditCase(caseItem.CaseId)" title="Edit Case">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </button>
+                                        </NavLink>
+                           
                                     </td>
                                 </tr>
                             }

@@ -1,6 +1,7 @@
-﻿@page "/profile-details/{userId:int}"
+﻿@page "/profile-details/{lawyerId:int}"
 @using LegalCaseManagementSystem_FrontEnd.Models
 @using LegalCaseManagementSystem_FrontEnd.Services
+@using System.Text.Json
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
 @inject DashboardState DashboardState
@@ -8,9 +9,9 @@
 <div class="profile-container @(DashboardState.IsDarkMode ? "dark-mode" : "")">
     <div class="profile-header">
         <h2>Lawyer Profile</h2>
-        <NavLink class="btn btn-secondary" href="@($"/lawyer/{UserId}")">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </NavLink>
+        <NavLink class="btn btn-secondary" href="@($"/lawyer/{LawyerId}")"> 
+          <i class="fas fa-arrow-left"></i> Back to Dashboard 
+         </NavLink> 
 
     </div>
 
@@ -61,11 +62,7 @@
                     </div>
                 </div>
 
-                <div class="profile-actions">
-                    <button class="btn btn-primary" @onclick="NavigateToEdit">
-                        <i class="fas fa-edit"></i> Edit Profile
-                    </button>
-                </div>
+           
             </div>
         </div>
     }
@@ -73,7 +70,7 @@
 
 @code {
     [Parameter]
-    public int UserId { get; set; }
+    public int LawyerId { get; set; }
 
     private Lawyer? lawyer;
     private User? user;
@@ -86,9 +83,9 @@
         try
         {
             isLoading = true;
-            
+
             // Get lawyer details
-            var lawyerResponse = await Http.GetAsync($"/api/Lawyers/{UserId}");
+            var lawyerResponse = await Http.GetAsync($"/api/Lawyers/{LawyerId}");
             if (!lawyerResponse.IsSuccessStatusCode)
             {
                 errorMessage = "Failed to load lawyer details";
@@ -96,8 +93,9 @@
             }
 
             var lawyerContent = await lawyerResponse.Content.ReadAsStringAsync();
-            lawyer = System.Text.Json.JsonSerializer.Deserialize<Lawyer>(lawyerContent,
-                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            lawyer = JsonSerializer.Deserialize<Lawyer>(
+                lawyerContent,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
             // Get user details
             if (lawyer != null && lawyer.UserId > 0)
@@ -106,8 +104,9 @@
                 if (userResponse.IsSuccessStatusCode)
                 {
                     var userContent = await userResponse.Content.ReadAsStringAsync();
-                    user = System.Text.Json.JsonSerializer.Deserialize<User>(userContent,
-                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    user = JsonSerializer.Deserialize<User>(
+                        userContent,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 }
             }
         }
@@ -121,13 +120,8 @@
         }
     }
 
-    private void NavigateToDashboard()
-    {
-        Navigation.NavigateTo($"/lawyer/{UserId}");
-    }
-
     private void NavigateToEdit()
     {
-        Navigation.NavigateTo($"/lawyer/{UserId}/edit");
+        Navigation.NavigateTo($"/lawyer/{DashboardState.UserId}/edit-profile");
     }
 }

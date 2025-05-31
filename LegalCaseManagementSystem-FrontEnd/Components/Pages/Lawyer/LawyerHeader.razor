@@ -1,37 +1,71 @@
 ﻿@using LegalCaseManagementSystem_FrontEnd.Services
+@rendermode InteractiveServer
+@inject AuthService AuthService
+@inject NavigationManager Navigation
 @inject DashboardState DashboardState
 
+@inject AuthService AuthService
 
-    <!-- Header -->
-    <header class="dashboard-header">
-        <div class="header-container">
-            <div class="header-brand">
-                <img src="/images/weightscale.png" alt="Logo" class="brand-logo" />
-                <div class="brand-text">
-                    <h1>My Cases <span class="pro-badge">PRO</span></h1>
-                    <p class="brand-tagline">Manage your assigned cases</p>
-                </div>
-            </div>
-            <div class="header-actions">
-                <div class="action-buttons">
-                    <button class="theme-toggle"  title="Toggle Theme">
-                    </button>
-                    <div class="user-dropdown">
-                        <div class="user-avatar-container">
-                            <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName ?? "Lawyer")&background=4e73df&color=fff" class="user-avatar" />
-                            <span class="user-status"></span>
-                        </div>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="#"><i class="fas fa-user"></i> Profile</a>
-                            <a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Settings</a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                        </div>
-                    </div>
-                    <button class="mobile-menu-toggle" >
-                        <i class="fas fa-bars"></i>
-                    </button>
-                </div>
+<header class="dashboard-header">
+    <div class="header-container">
+        <div class="header-brand">
+            <img src="/images/weightscale.png" alt="Logo" class="brand-logo" />
+            <div class="brand-text">
+                <h1>My Cases <span class="pro-badge">PRO</span></h1>
+                <p class="brand-tagline">Manage your assigned cases</p>
             </div>
         </div>
-        </header>
+        <div class="header-actions">
+            <div class="action-buttons">
+ 
+                <div class="user-dropdown">
+                    <div class="user-avatar-container">
+                        @if (DashboardState.IsLoading)
+                        {
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                        }
+                        else
+                        {
+                            <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName ?? "Lawyer")&background=4e73df&color=fff"
+                                 class="user-avatar" />
+                        }
+                    </div>
+                    <div class="dropdown-menu">
+                        @if (DashboardState.LawyerId > 0)
+                        {
+                            <NavLink class="dropdown-item" href="@($"/profile-details/{DashboardState.LawyerId}")"
+                                     match="NavLinkMatch.Prefix">
+                                <i class="fas fa-user"></i> Profile
+                            </NavLink>
+                        }
+                        else
+                        {
+                            <span class="dropdown-item disabled">
+                                <i class="fas fa-user-slash"></i> Profile Loading...
+                            </span>
+                        }
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" @onclick="Logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    </div>
+                </div>
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+@code {
+    private void ToggleTheme()
+    {
+        DashboardState.IsDarkMode = !DashboardState.IsDarkMode;
+        DashboardState.NotifyStateChanged();
+    }
+
+    private void Logout()
+    {
+        AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}

@@ -45,10 +45,13 @@
 
 .table td {
     vertical-align: middle;
+    font-weight: 500;
+    color: #fff;
 }
 
 .table-striped tbody tr:nth-of-type(odd) {
     background-color: rgba(0, 0, 0, 0.02);
+
 }
 
 .table-hover tbody tr:hover {
