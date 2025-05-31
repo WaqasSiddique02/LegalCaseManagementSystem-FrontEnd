@@ -17,36 +17,10 @@
         </div>
         <div class="header-actions">
             <div class="action-buttons">
- 
                 <div class="user-dropdown">
-                    <div class="user-avatar-container">
-                        @if (DashboardState.IsLoading)
-                        {
-                            <div class="spinner-border spinner-border-sm" role="status"></div>
-                        }
-                        else
-                        {
-                            <img src="https://ui-avatars.com/api/?name=@(DashboardState.LawyerName ?? "Lawyer")&background=4e73df&color=fff"
-                                 class="user-avatar" />
-                        }
-                    </div>
-                    <div class="dropdown-menu">
-                        @if (DashboardState.LawyerId > 0)
-                        {
-                            <NavLink class="dropdown-item" href="@($"/profile-details/{DashboardState.LawyerId}")"
-                                     match="NavLinkMatch.Prefix">
-                                <i class="fas fa-user"></i> Profile
-                            </NavLink>
-                        }
-                        else
-                        {
-                            <span class="dropdown-item disabled">
-                                <i class="fas fa-user-slash"></i> Profile Loading...
-                            </span>
-                        }
-                        <div class="dropdown-divider"></div>
-                        <button class="dropdown-item" @onclick="Logout"><i class="fas fa-sign-out-alt"></i> Logout</button>
-                    </div>
+                    <button class="logout-button" @onclick="Logout">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
                 </div>
                 <button class="mobile-menu-toggle">
                     <i class="fas fa-bars"></i>
@@ -57,12 +31,6 @@
 </header>
 
 @code {
-    private void ToggleTheme()
-    {
-        DashboardState.IsDarkMode = !DashboardState.IsDarkMode;
-        DashboardState.NotifyStateChanged();
-    }
-
     private void Logout()
     {
         AuthService.LogoutAsync();
