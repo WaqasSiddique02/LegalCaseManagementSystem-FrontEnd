@@ -18,14 +18,13 @@
         </div>
 
         <div class="header-actions">
-            <div class="user-dropdown">
+            <div class="user-dropdown" @onclick="ToggleDropdown">
                 <div class="user-avatar-container">
                     <img src="https://ui-avatars.com/api/?name=@(user?.Username?.FirstOrDefault() ?? 'U')&background=4e73df&color=fff"
                          class="user-avatar" />
                     <span class="user-status"></span>
                 </div>
-                <div class="dropdown-menu">
-                  
+                <div class="dropdown-menu @(isDropdownOpen ? "show" : "")">
                     <div class="dropdown-divider"></div>
                     <a href="/login" class="dropdown-item">
                         <i class="fas fa-sign-out-alt"></i> Logout
@@ -46,6 +45,7 @@
 
     private User? user;
     private bool isMobileMenuOpen;
+    private bool isDropdownOpen = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -56,5 +56,10 @@
     private void ToggleMobileMenu()
     {
         isMobileMenuOpen = !isMobileMenuOpen;
+    }
+
+    private void ToggleDropdown()
+    {
+        isDropdownOpen = !isDropdownOpen;
     }
 }
