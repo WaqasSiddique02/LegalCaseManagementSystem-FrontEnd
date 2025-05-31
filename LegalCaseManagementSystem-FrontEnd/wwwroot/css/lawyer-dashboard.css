@@ -720,3 +720,22 @@ body {
         font-size: 0.85rem;
     }
 }
+/*logout*/
+.logout-button {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+    .logout-button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .logout-button i {
+        margin-right: 5px;
+    }
+
