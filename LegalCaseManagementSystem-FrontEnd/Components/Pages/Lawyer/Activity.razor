@@ -7,7 +7,6 @@
         <h3>Recent Activity</h3>
     </div>
     <div class="activity-list">
-        <LoadingAndError>
             @foreach (var activity in DashboardState.RecentActivities)
             {
                 <div class="activity-item">
@@ -20,7 +19,6 @@
                     </div>
                 </div>
             }
-        </LoadingAndError>
     </div>
 </div>
 
