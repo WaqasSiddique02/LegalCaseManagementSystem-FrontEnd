@@ -18,7 +18,7 @@
     padding: 1.5rem;
     margin-bottom: 1.5rem;
     transition: transform 0.3s ease;
-    color: var(--text-color, #ffffff); 
+    color: var(--text-color, #ffffff);
 }
 
     .dashboard-card:hover {
@@ -29,7 +29,7 @@
         font-size: 1.25rem;
         font-weight: 700;
         margin-bottom: 1rem;
-        color: var(--text-color, #ffffff); 
+        color: var(--text-color, #ffffff);
     }
 
 .case-info-card {
@@ -37,6 +37,22 @@
 }
 
 .tasks-card {
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+
+.info-row-container {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.client-info-card,
+.lawyer-info-card {
+    flex: 1;
+}
+
+.hearings-card {
     width: 100%;
     margin-bottom: 1.5rem;
 }
@@ -60,25 +76,33 @@
 
 .info-value {
     flex: 1;
-    color: var(--text-color, #ffffff); 
+    color: var(--text-color, #ffffff);
 }
 
 .dashboard-card table {
-    color: var(--text-color, #ffffff);
+    color: var(--text-color, #ffffff) !important;
 }
 
 .dashboard-card th,
 .dashboard-card td {
-    color: var(--text-color, #ffffff); 
+    color: var(--text-color, #ffffff) !important;
 }
 
 .dashboard-card .badge {
-    color: var(--text-color, #ffffff); 
-    background-color: var(--badge-bg, #4a5568); 
+    color: var(--text-color, #ffffff);
+    background-color: var(--badge-bg, #4a5568);
 }
 
-/* Responsive */
-@media (max-width: 576px) {
+@media (max-width: 768px) {
+    .info-row-container {
+        flex-direction: column;
+    }
+
+    .client-info-card,
+    .lawyer-info-card {
+        width: 100%;
+    }
+
     .dashboard-card {
         padding: 1rem;
     }
@@ -94,4 +118,56 @@
     .dashboard-grid {
         grid-template-columns: 1fr;
     }
+}
+
+@media (max-width: 576px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dashboard-card table {
+    border-collapse: collapse; 
+    width: 100%;
+}
+
+
+.dashboard-card th,
+.dashboard-card td {
+    border: 1px solid rgba(255, 255, 255, 0.2) !important; 
+    padding: 0.75rem; 
+}
+
+.dashboard-card th {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3) !important;
+    background-color: rgba(255, 255, 255, 0.05); 
+}
+
+
+.dashboard-card table.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.info-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); 
+    padding: 0.5rem 0;
+    margin-bottom: 0.5rem; 
+}
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+.info-label {
+    font-weight: 600;
+    width: 150px;
+    color: var(--text-muted, #b0b0b0);
+    padding-right: 1rem;
+}
+
+.info-value {
+    flex: 1;
+    color: var(--text-color, #ffffff);
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    padding-left: 1rem;
 }

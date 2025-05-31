@@ -105,10 +105,10 @@
                 }
             </div>
 
-            <!-- Remaining Cards in Grid -->
-            <div class="dashboard-grid">
+            <!-- Client and Lawyer Info Row -->
+            <div class="info-row-container">
                 <!-- Client Info Card -->
-                <div class="dashboard-card">
+                <div class="dashboard-card client-info-card">
                     <h4>Client Information</h4>
                     @if (caseDetails.Client != null)
                     {
@@ -128,7 +128,7 @@
                 </div>
 
                 <!-- Lawyer Info Card -->
-                <div class="dashboard-card">
+                <div class="dashboard-card lawyer-info-card">
                     <h4>Lawyer Information</h4>
                     @if (caseDetails.Lawyer != null)
                     {
@@ -146,46 +146,49 @@
                         <p>No lawyer assigned.</p>
                     }
                 </div>
+            </div>
 
-                <!-- Hearings Card -->
-                <div class="dashboard-card">
-                    <h4>Hearings</h4>
-                    @if (caseDetails.Hearings?.Any() == true)
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead>
+            <!-- Hearings Card (Single Row) -->
+            <div class="dashboard-card hearings-card">
+                <h4>Hearings</h4>
+                @if (caseDetails.Hearings?.Any() == true)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Venue</th>
+                                    <th>Outcome</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var hearing in caseDetails.Hearings.OrderBy(h => h.HearingDate))
+                                {
                                     <tr>
-                                        <th>Date</th>
-                                        <th>Venue</th>
-                                        <th>Outcome</th>
-                                        <th>Status</th>
+                                        <td>@hearing.HearingDate.ToString("dd MMM yyyy h:mm tt")</td>
+                                        <td>@hearing.Venue</td>
+                                        <td>@(string.IsNullOrEmpty(hearing.Outcome) ? "N/A" : hearing.Outcome)</td>
+                                        <td>
+                                            <span class="badge @(hearing.HearingDate > DateTime.Now ? "status-in-progress" : "status-completed")">
+                                                @(hearing.HearingDate > DateTime.Now ? "Upcoming" : "Past")
+                                            </span>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var hearing in caseDetails.Hearings.OrderBy(h => h.HearingDate))
-                                    {
-                                        <tr>
-                                            <td>@hearing.HearingDate.ToString("dd MMM yyyy h:mm tt")</td>
-                                            <td>@hearing.Venue</td>
-                                            <td>@(string.IsNullOrEmpty(hearing.Outcome) ? "N/A" : hearing.Outcome)</td>
-                                            <td>
-                                                <span class="badge @(hearing.HearingDate > DateTime.Now ? "status-in-progress" : "status-completed")">
-                                                    @(hearing.HearingDate > DateTime.Now ? "Upcoming" : "Past")
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <p>No hearings scheduled.</p>
-                    }
-                </div>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p>No hearings scheduled.</p>
+                }
+            </div>
 
+            <!-- Remaining Cards in Grid -->
+            <div class="dashboard-grid">
                 <!-- Documents Card -->
                 <div class="dashboard-card">
                     <h4>Documents</h4>
@@ -207,9 +210,6 @@
                                             <td>@doc.Title</td>
                                             <td>@doc.UploadedAt.ToString("dd MMM yyyy")</td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewDocument(doc)">
-                                                    <i class="fas fa-eye"></i> View
-                                                </button>
                                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => DownloadDocument(doc)">
                                                     <i class="fas fa-download"></i> Download
                                                 </button>
@@ -401,10 +401,18 @@
                     return;
                 }
 
-                // If Hearings are not included or empty, load them separately
+                // If related data is not included or empty, load them separately
                 if (caseDetails?.Hearings == null || !caseDetails.Hearings.Any())
                 {
                     caseDetails.Hearings = await LoadHearings(id);
+                }
+                if (caseDetails?.Documents == null || !caseDetails.Documents.Any())
+                {
+                    caseDetails.Documents = await LoadDocuments(id);
+                }
+                if (caseDetails?.Invoices == null || !caseDetails.Invoices.Any())
+                {
+                    caseDetails.Invoices = await LoadInvoices(id);
                 }
             }
 
@@ -430,13 +438,54 @@
 
     private async Task<List<CaseTask>> LoadTasks(int caseId)
     {
-        var response = await Http.GetAsync($"/api/cases/{caseId}/Tasks");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<List<CaseTask>>(content, jsonOptions) ?? new();
+            var response = await Http.GetAsync($"/api/cases/{caseId}/CaseTasks");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Tasks API Raw Response: {content}");
+
+                // Use lenient JSON deserialization options
+                var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        AllowTrailingCommas = true,
+                        ReadCommentHandling = JsonCommentHandling.Skip
+                    };
+
+                var tasks = JsonSerializer.Deserialize<List<CaseTask>>(content, options) ?? new List<CaseTask>();
+                Console.WriteLine($"Deserialized {tasks.Count} tasks");
+
+                // Debug: Log each task's details
+                foreach (var task in tasks)
+                {
+                    Console.WriteLine($"Task ID: {task.TaskId}, Title: {task.Title}, Status: {task.Status}, CreatedAt: {task.CreatedAt}");
+                }
+
+                return tasks;
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Failed to load tasks: {response.StatusCode} - {errorContent}";
+                Console.WriteLine(errorMessage);
+                return new List<CaseTask>();
+            }
         }
-        return new();
+        catch (JsonException jsonEx)
+        {
+            errorMessage = $"Failed to deserialize tasks: {jsonEx.Message}";
+            Console.WriteLine(errorMessage);
+            return new List<CaseTask>();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading tasks: {ex.Message}";
+            Console.WriteLine(errorMessage);
+            return new List<CaseTask>();
+        }
     }
 
     private async Task<List<Hearing>> LoadHearings(int caseId)
@@ -447,10 +496,18 @@
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Hearings API Response: {content}"); // Debug log
-                var hearings = JsonSerializer.Deserialize<List<Hearing>>(content, jsonOptions) ?? new List<Hearing>();
-                Console.WriteLine($"Deserialized Hearings Count: {hearings.Count}"); // Debug log
-                return hearings;
+                Console.WriteLine($"Hearings API Response: {content}");
+                try
+                {
+                    var hearings = JsonSerializer.Deserialize<List<Hearing>>(content, jsonOptions) ?? new List<Hearing>();
+                    Console.WriteLine($"Deserialized Hearings Count: {hearings.Count}");
+                    return hearings;
+                }
+                catch (JsonException jsonEx)
+                {
+                    errorMessage = $"Failed to deserialize hearings: {jsonEx.Message}";
+                    return new List<Hearing>();
+                }
             }
             else
             {
@@ -467,48 +524,120 @@
 
     private async Task<List<Document>> LoadDocuments(int caseId)
     {
-        var response = await Http.GetAsync($"/api/cases/{caseId}/Documents");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<List<Document>>(content, jsonOptions) ?? new();
+            var response = await Http.GetAsync($"/api/cases/{caseId}/Documents");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Documents API Response: {content}");
+                try
+                {
+                    var documents = JsonSerializer.Deserialize<List<Document>>(content, jsonOptions) ?? new List<Document>();
+                    Console.WriteLine($"Deserialized Documents Count: {documents.Count}");
+                    return documents;
+                }
+                catch (JsonException jsonEx)
+                {
+                    errorMessage = $"Failed to deserialize documents: {jsonEx.Message}";
+                    return new List<Document>();
+                }
+            }
+            else
+            {
+                errorMessage = $"Failed to load documents: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}";
+                return new List<Document>();
+            }
         }
-        return new();
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading documents: {ex.Message}";
+            return new List<Document>();
+        }
     }
 
     private async Task<List<Invoice>> LoadInvoices(int caseId)
     {
-        var response = await Http.GetAsync($"/api/cases/{caseId}/Invoices");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<List<Invoice>>(content, jsonOptions) ?? new();
+            var response = await Http.GetAsync($"/api/cases/{caseId}/Invoices");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Invoices API Response: {content}");
+                try
+                {
+                    var invoices = JsonSerializer.Deserialize<List<Invoice>>(content, jsonOptions) ?? new List<Invoice>();
+                    Console.WriteLine($"Deserialized Invoices Count: {invoices.Count}");
+                    return invoices;
+                }
+                catch (JsonException jsonEx)
+                {
+                    errorMessage = $"Failed to deserialize invoices: {jsonEx.Message}";
+                    return new List<Invoice>();
+                }
+            }
+            else
+            {
+                errorMessage = $"Failed to load invoices: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}";
+                return new List<Invoice>();
+            }
         }
-        return new();
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading invoices: {ex.Message}";
+            return new List<Invoice>();
+        }
     }
 
     private async Task<Client?> LoadClient(int clientId)
     {
         if (clientId == 0) return null;
-        var response = await Http.GetAsync($"/api/Clients/{clientId}");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<Client>(content, jsonOptions);
+            var response = await Http.GetAsync($"/api/Clients/{clientId}");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Client API Response: {content}");
+                return JsonSerializer.Deserialize<Client>(content, jsonOptions);
+            }
+            else
+            {
+                errorMessage = $"Failed to load client: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}";
+                return null;
+            }
         }
-        return null;
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading client: {ex.Message}";
+            return null;
+        }
     }
 
     private async Task<Lawyer?> LoadLawyer(int lawyerId)
     {
         if (lawyerId == 0) return null;
-        var response = await Http.GetAsync($"/api/Lawyers/{lawyerId}");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<Lawyer>(content, jsonOptions);
+            var response = await Http.GetAsync($"/api/Lawyers/{lawyerId}");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Lawyer API Response: {content}");
+                return JsonSerializer.Deserialize<Lawyer>(content, jsonOptions);
+            }
+            else
+            {
+                errorMessage = $"Failed to load lawyer: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}";
+                return null;
+            }
         }
-        return null;
+        catch (Exception ex)
+        {
+            errorMessage = $"Exception loading lawyer: {ex.Message}";
+            return null;
+        }
     }
 
     private string GetStatusBadgeClass(CaseStatus status)
@@ -537,11 +666,6 @@
     {
         DashboardState.Cases = DashboardState.Cases ?? new List<Case>();
         Navigation.NavigateTo($"/lawyer/{LawyerId}/cases");
-    }
-
-    private void ViewDocument(Document document)
-    {
-        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/documents/{document.DocumentId}/view");
     }
 
     private void DownloadDocument(Document document)
