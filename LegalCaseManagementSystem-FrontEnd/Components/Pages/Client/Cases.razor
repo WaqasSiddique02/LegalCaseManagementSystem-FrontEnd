@@ -8,73 +8,73 @@
 
 <ClientHeader></ClientHeader>
 
-    <div class="dashboard-grid">
-        @if (isLoading)
-        {
-            <div class="text-center py-5">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+<div class="dashboard-grid">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div class="content-card">
+            <div class="card-header">
+                <h3>All Cases</h3>
+                <div class="d-flex align-items-center gap-2">
+                    <select class="form-select form-select-sm" @onchange="FilterCases">
+                        <option value="All">All</option>
+                        <option value="Open">Open</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                    <a href="/client/@UserId" class="btn btn-primary btn-sm">Back to Dashboard</a>
                 </div>
             </div>
-        }
-        else if (errorMessage != null)
-        {
-            <div class="alert alert-danger" role="alert">
-                @errorMessage
-            </div>
-        }
-        else
-        {
-            <div class="content-card">
-                <div class="card-header">
-                    <h3>All Cases</h3>
-                    <div class="d-flex align-items-center gap-2">
-                        <select class="form-select form-select-sm" @onchange="FilterCases">
-                            <option value="All">All</option>
-                            <option value="Open">Open</option>
-                            <option value="Closed">Closed</option>
-                        </select>
-                        <a href="/client/@UserId" class="btn btn-primary btn-sm">Back to Dashboard</a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    @if (filteredCases.Any())
-                    {
-                        <div class="case-grid">
-                            @foreach (var caseItem in filteredCases.OrderByDescending(c => c.StartDate))
-                            {
-                                <div class="case-card">
-                                    <div class="case-card-header">
-                                        <h4>@caseItem.Title</h4>
-                                        <span class="badge @GetStatusBadgeClass(caseItem.Status)">
-                                            @caseItem.Status
-                                        </span>
+            <div class="card-body">
+                @if (filteredCases.Any())
+                {
+                    <div class="case-grid">
+                        @foreach (var caseItem in filteredCases.OrderByDescending(c => c.StartDate))
+                        {
+                            <div class="case-card">
+                                <div class="case-card-header">
+                                    <h4>@caseItem.Title</h4>
+                                    <span class="badge @GetStatusBadgeClass(caseItem.Status)">
+                                        @caseItem.Status
+                                    </span>
+                                </div>
+                                <div class="case-card-body">
+                                    <div class="case-info">
+                                        <p><strong>Lawyer:</strong> @lawyers.GetValueOrDefault(caseItem.LawyerId)?.FullName</p>
+                                        <p><strong>Start Date:</strong> @caseItem.StartDate.ToString("MMM dd, yyyy")</p>
                                     </div>
-                                    <div class="case-card-body">
-                                        <div class="case-info">
-                                            <p><strong>Lawyer:</strong> @lawyers.GetValueOrDefault(caseItem.LawyerId)?.FullName</p>
-                                            <p><strong>Start Date:</strong> @caseItem.StartDate.ToString("MMM dd, yyyy")</p>
-                                        </div>
-                                        <div class="case-actions">
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewCase(caseItem.CaseId)">
-                                                <i class="fas fa-eye"></i> View Details
-                                            </button>
-                                        </div>
+                                    <div class="case-actions">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewCase(caseItem.CaseId)">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </button>
                                     </div>
                                 </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info" role="alert">
-                            No cases found for this client
-                        </div>
-                    }
-                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info" role="alert">
+                        No cases found for this client
+                    </div>
+                }
             </div>
-        }
-    </div>
+        </div>
+    }
+</div>
 
 
 @code {
@@ -102,7 +102,6 @@
     {
         try
         {
-            // Load user
             var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
             if (!userResponse.IsSuccessStatusCode)
             {
@@ -112,7 +111,25 @@
             }
             user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
 
-            var casesResponse = await Http.GetAsync("/api/Cases");
+            var clientsResponse = await Http.GetAsync($"/api/Clients?userId={UserId}");
+            if (!clientsResponse.IsSuccessStatusCode)
+            {
+                errorMessage = $"Error loading client: {clientsResponse.StatusCode}";
+                isLoading = false;
+                return;
+            }
+
+            var clients = await clientsResponse.Content.ReadFromJsonAsync<List<Client>>(jsonOptions);
+            client = clients?.FirstOrDefault();
+
+            if (client == null)
+            {
+                errorMessage = "No client found for this user";
+                isLoading = false;
+                return;
+            }
+
+            var casesResponse = await Http.GetAsync($"/api/Cases?clientId={client.UserId}");
             if (!casesResponse.IsSuccessStatusCode)
             {
                 errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
@@ -120,13 +137,7 @@
                 return;
             }
 
-            var allCases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
-
-            cases = allCases.Where(c =>
-                (c.CaseId == UserId) ||               
-                (c.Client?.UserId == UserId)             
-            ).ToList();
-
+            cases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
             filteredCases = cases;
 
             var tasks = new List<Task>();
