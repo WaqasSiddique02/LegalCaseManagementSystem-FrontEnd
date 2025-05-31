@@ -120,9 +120,6 @@
                             <button class="btn btn-pay" @onclick="() => PayInvoice(invoice.InvoiceId)">
                                 <i class="fas fa-credit-card"></i> Pay Now
                             </button>
-                            <button class="btn btn-outline-pay">
-                                <i class="fas fa-print"></i> Print Invoice
-                            </button>
                         </div>
                     }
                     else if (invoice?.Status == "Paid")

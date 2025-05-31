@@ -4,199 +4,210 @@
 @using System.Text.Json
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <ClientHeader></ClientHeader>
 
-    <div class="dashboard-grid">
-        @if (isLoading)
-        {
-            <div class="text-center py-5">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
+<div class="dashboard-grid">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
-        }
-        else if (errorMessage != null)
-        {
-            <div class="alert alert-danger" role="alert">
-                @errorMessage
+        </div>
+
+        <script suppress-error="BL9992">
+            window.triggerFileDownload = (url, fileName) => {
+                const anchorElement = document.createElement('a');
+                anchorElement.href = url;
+                anchorElement.download = fileName || '';
+                anchorElement.click();
+                anchorElement.remove();
+            }
+        </script>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div class="content-card">
+            <div class="card-header">
+                <h3>Case Details</h3>
+                <a href="/client/@UserId/cases" class="btn btn-primary btn-sm">Back to Cases</a>
             </div>
-        }
-        else
-        {
-            <div class="content-card">
-                <div class="card-header">
-                    <h3>Case Details</h3>
-                    <a href="/client/@UserId/cases" class="btn btn-primary btn-sm">Back to Cases</a>
-                </div>
-                <div class="card-body">
-                    @if (caseItem != null)
-                    {
-                        <div class="case-detail">
-                            <div class="case-detail-header">
-                                <h4>@caseItem.Title</h4>
-                                <span class="badge @GetStatusBadgeClass(caseItem.Status)">
-                                    @caseItem.Status
-                                </span>
+            <div class="card-body">
+                @if (caseItem != null)
+                {
+                    <div class="case-detail">
+                        <div class="case-detail-header">
+                            <h4>@caseItem.Title</h4>
+                            <span class="badge @GetStatusBadgeClass(caseItem.Status)">
+                                @caseItem.Status
+                            </span>
+                        </div>
+                        <div class="case-detail-body">
+                            <div class="detail-section">
+                                <h5>Case Information</h5>
+                                <div class="detail-item">
+                                    <strong>Title:</strong>
+                                    <span>@caseItem.Title</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Lawyer:</strong>
+                                    <span>@(lawyer?.FullName ?? "Not assigned")</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Start Date:</strong>
+                                    <span>@caseItem.StartDate.ToString("MMMM dd, yyyy")</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Status:</strong>
+                                    <span>@caseItem.Status</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Description:</strong>
+                                    <span>@(caseItem.Description ?? "No description available")</span>
+                                </div>
                             </div>
-                            <div class="case-detail-body">
-                                <div class="detail-section">
-                                    <h5>Case Information</h5>
-                                    <div class="detail-item">
-                                        <strong>Title:</strong>
-                                        <span>@caseItem.Title</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Lawyer:</strong>
-                                        <span>@(lawyer?.FullName ?? "Not assigned")</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Start Date:</strong>
-                                        <span>@caseItem.StartDate.ToString("MMMM dd, yyyy")</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Status:</strong>
-                                        <span>@caseItem.Status</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Description:</strong>
-                                        <span>@(caseItem.Description ?? "No description available")</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info" role="alert">
+                        Case not found
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h3>Related Hearings</h3>
+                <a href="/client/@UserId/hearings" class="btn btn-primary btn-sm">View All Hearings</a>
+            </div>
+            <div class="card-body">
+                @if (hearings.Any())
+                {
+                    <div class="hearing-list">
+                        @foreach (var hearing in hearings.OrderBy(h => h.HearingDate))
+                        {
+                            <div class="hearing-item">
+                                <div class="hearing-date">
+                                    <span class="day">@hearing.HearingDate.Day</span>
+                                    <span class="month">@hearing.HearingDate.ToString("MMM")</span>
+                                </div>
+                                <div class="hearing-info">
+                                    <h4>Hearing on @hearing.HearingDate.ToString("MMMM dd, yyyy")</h4>
+                                    <p><i class="fas fa-clock"></i> @hearing.HearingDate.ToString("h:mm tt")</p>
+                                    <p><i class="fas fa-map-marker-alt"></i> @hearing.Venue</p>
+                                    <div class="hearing-actions">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewHearing(hearing.HearingId)">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info" role="alert">
-                            Case not found
-                        </div>
-                    }
-                </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info" role="alert">
+                        No hearings found for this case
+                    </div>
+                }
             </div>
+        </div>
 
-            <div class="content-card">
-                <div class="card-header">
-                    <h3>Related Hearings</h3>
-                    <a href="/client/@UserId/hearings" class="btn btn-primary btn-sm">View All Hearings</a>
-                </div>
-                <div class="card-body">
-                    @if (hearings.Any())
-                    {
-                        <div class="hearing-list">
-                            @foreach (var hearing in hearings.OrderBy(h => h.HearingDate))
-                            {
-                                <div class="hearing-item">
-                                    <div class="hearing-date">
-                                        <span class="day">@hearing.HearingDate.Day</span>
-                                        <span class="month">@hearing.HearingDate.ToString("MMM")</span>
+        <div class="content-card">
+            <div class="card-header">
+                <h3>Related Invoices</h3>
+                <a href="/client/@UserId/invoices" class="btn btn-primary btn-sm">View All Invoices</a>
+            </div>
+            <div class="card-body">
+                @if (invoices.Any())
+                {
+                    <div class="invoice-grid">
+                        @foreach (var invoice in invoices.OrderByDescending(i => i.IssuedDate))
+                        {
+                            <div class="invoice-card">
+                                <div class="invoice-card-header">
+                                    <h4>Invoice #@invoice.InvoiceId</h4>
+                                    <span class="badge @GetInvoiceStatusBadge(invoice.Status)">
+                                        @invoice.Status
+                                    </span>
+                                </div>
+                                <div class="invoice-card-body">
+                                    <div class="invoice-info">
+                                        <p><strong>Amount:</strong> @invoice.Amount.ToString("C")</p>
+                                        <p><strong>Issued Date:</strong> @invoice.IssuedDate.ToString("MMM dd, yyyy")</p>
                                     </div>
-                                    <div class="hearing-info">
-                                        <h4>Hearing on @hearing.HearingDate.ToString("MMMM dd, yyyy")</h4>
-                                        <p><i class="fas fa-clock"></i> @hearing.HearingDate.ToString("h:mm tt")</p>
-                                        <p><i class="fas fa-map-marker-alt"></i> @hearing.Venue</p>
-                                        <div class="hearing-actions">
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewHearing(hearing.HearingId)">
-                                                <i class="fas fa-eye"></i> View Details
+                                    <div class="invoice-actions">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewInvoice(invoice.InvoiceId)">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                        @if (invoice.Status == "Unpaid")
+                                        {
+                                            <button class="btn btn-sm btn-success ms-2" @onclick="() => PayInvoice(invoice.InvoiceId)">
+                                                <i class="fas fa-credit-card"></i> Pay
                                             </button>
-                                        </div>
+                                        }
                                     </div>
                                 </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info" role="alert">
-                            No hearings found for this case
-                        </div>
-                    }
-                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info" role="alert">
+                        No invoices found for this case
+                    </div>
+                }
             </div>
+        </div>
 
-            <div class="content-card">
-                <div class="card-header">
-                    <h3>Related Invoices</h3>
-                    <a href="/client/@UserId/invoices" class="btn btn-primary btn-sm">View All Invoices</a>
-                </div>
-                <div class="card-body">
-                    @if (invoices.Any())
-                    {
-                        <div class="invoice-grid">
-                            @foreach (var invoice in invoices.OrderByDescending(i => i.IssuedDate))
-                            {
-                                <div class="invoice-card">
-                                    <div class="invoice-card-header">
-                                        <h4>Invoice #@invoice.InvoiceId</h4>
-                                        <span class="badge @GetInvoiceStatusBadge(invoice.Status)">
-                                            @invoice.Status
-                                        </span>
-                                    </div>
-                                    <div class="invoice-card-body">
-                                        <div class="invoice-info">
-                                            <p><strong>Amount:</strong> @invoice.Amount.ToString("C")</p>
-                                            <p><strong>Issued Date:</strong> @invoice.IssuedDate.ToString("MMM dd, yyyy")</p>
-                                        </div>
-                                        <div class="invoice-actions">
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewInvoice(invoice.InvoiceId)">
-                                                <i class="fas fa-eye"></i> View
-                                            </button>
-                                            @if (invoice.Status == "Unpaid")
-                                            {
-                                                <button class="btn btn-sm btn-success ms-2" @onclick="() => PayInvoice(invoice.InvoiceId)">
-                                                    <i class="fas fa-credit-card"></i> Pay
-                                                </button>
-                                            }
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info" role="alert">
-                            No invoices found for this case
-                        </div>
-                    }
-                </div>
+        <div class="content-card">
+            <div class="card-header">
+                <h3>Related Documents</h3>
             </div>
-
-            <div class="content-card">
-                <div class="card-header">
-                    <h3>Related Documents</h3>
-                </div>
-                <div class="card-body">
-                    @if (documents.Any())
-                    {
-                        <div class="document-list">
-                            @foreach (var document in documents.OrderBy(d => d.UploadedAt))
-                            {
-                                <div class="document-item">
-                                    <div class="document-info">
-                                        <h4>@document.Title</h4>
-                                        <p><i class="fas fa-calendar"></i> Uploaded: @document.UploadedAt.ToString("MMM dd, yyyy")</p>
-                                    </div>
-                                    <div class="document-actions">
-                                        <a href="@document.FilePath" class="btn btn-sm btn-outline-primary" target="_blank">
-                                            <i class="fas fa-download"></i> Download
-                                        </a>
-                                    </div>
+            <div class="card-body">
+                @if (documents.Any())
+                {
+                    <div class="document-list">
+                        @foreach (var document in documents.OrderBy(d => d.UploadedAt))
+                        {
+                            <div class="document-item">
+                                <div class="document-info">
+                                    <h4>@document.Title</h4>
+                                    <p><i class="fas fa-calendar"></i> Uploaded: @document.UploadedAt.ToString("MMM dd, yyyy")</p>
                                 </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info" role="alert">
-                            No documents found for this case
-                        </div>
-                    }
-                </div>
+                                <div class="document-actions">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => DownloadDocument(document)">
+                                        <i class="fas fa-download"></i> Download
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info" role="alert">
+                        No documents found for this case
+                    </div>
+                }
             </div>
-        }
-    </div>
+        </div>
+    }
+</div>
 
 @code {
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
@@ -308,7 +319,6 @@
         };
     }
 
-
     private void ViewHearing(int hearingId)
     {
         Navigation.NavigateTo($"/client/{UserId}/hearings/{CaseId}/{hearingId}");
@@ -322,5 +332,29 @@
     private void PayInvoice(int invoiceId)
     {
         Navigation.NavigateTo($"/client/{UserId}/invoices/{invoiceId}/pay");
+    }
+
+    private async Task DownloadDocument(Document document)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(document.FilePath))
+            {
+                await JSRuntime.InvokeVoidAsync(
+                    "triggerFileDownload",
+                    document.FilePath,
+                    document.Title + Path.GetExtension(document.FilePath));
+            }
+            else
+            {
+                errorMessage = "Document path is not available";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error downloading document: {ex.Message}";
+            StateHasChanged();
+        }
     }
 }

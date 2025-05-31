@@ -254,25 +254,7 @@
             }
             user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
 
-            var clientsResponse = await Http.GetAsync($"/api/Clients?userId={UserId}");
-            if (!clientsResponse.IsSuccessStatusCode)
-            {
-                errorMessage = $"Error loading client: {clientsResponse.StatusCode}";
-                isLoading = false;
-                return;
-            }
-
-            var clients = await clientsResponse.Content.ReadFromJsonAsync<List<Client>>(jsonOptions);
-            client = clients?.FirstOrDefault();
-
-            if (client == null)
-            {
-                errorMessage = "No client found for this user";
-                isLoading = false;
-                return;
-            }
-
-            var casesResponse = await Http.GetAsync($"/api/Cases?clientId={client.UserId}");
+            var casesResponse = await Http.GetAsync("/api/Cases");
             if (!casesResponse.IsSuccessStatusCode)
             {
                 errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
@@ -280,7 +262,8 @@
                 return;
             }
 
-            cases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
+            var allCases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
+            cases = allCases.Where(c => c.CaseId == UserId).ToList();
 
             activeCasesCount = cases.Count(c => c.Status == CaseStatus.Open || c.Status == CaseStatus.InProgress);
 
