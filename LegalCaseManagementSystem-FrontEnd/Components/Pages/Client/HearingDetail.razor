@@ -8,90 +8,143 @@
 
 <ClientHeader></ClientHeader>
 
-    <div class="dashboard-grid">
-        @if (isLoading)
-        {
-            <div class="text-center py-5">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+<div class="hearing-container">
+    <div class="bg-glows">
+        <div class="glow-circle primary"></div>
+        <div class="glow-circle secondary"></div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-overlay">
+            <div class="spinner-container">
+                <div class="spinner"></div>
+                <p>Loading hearing details...</p>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="error-card">
+            <div class="error-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="error-content">
+                <h3>Error Loading Hearing</h3>
+                <p>@errorMessage</p>
+                <button class="btn btn-retry" @onclick="ReloadPage">
+                    <i class="fas fa-sync-alt"></i> Try Again
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="hearing-header">
+            <div class="header-content">
+                <h2>Hearing Details</h2>
+                <div class="breadcrumb">
+                    <a href="/client/@UserId">Client</a> /
+                    <a href="/client/@UserId/hearings">Hearings</a> /
+                    <span>Case #@CaseId</span>
                 </div>
             </div>
-        }
-        else if (errorMessage != null)
-        {
-            <div class="alert alert-danger" role="alert">
-                @errorMessage
+            <div class="header-actions">
+                <a href="/client/@UserId/hearings" class="btn btn-back">
+                    <i class="fas fa-arrow-left"></i> All Hearings
+                </a>
+                <a href="/client/@UserId/cases/@CaseId" class="btn btn-view-case">
+                    <i class="fas fa-gavel"></i> View Case
+                </a>
             </div>
-        }
-        else
-        {
-            <div class="content-card">
-                <div class="card-header">
-                    <h3>Hearing Details</h3>
-                    <div class="d-flex align-items-center gap-2">
-                        <a href="/client/@UserId/hearings" class="btn btn-primary btn-sm">Back to Hearings</a>
-                        <a href="/client/@UserId/cases/@CaseId" class="btn btn-outline-primary btn-sm">View Case</a>
+        </div>
+
+        <div class="hearing-card">
+            <div class="hearing-summary">
+                <div class="summary-header">
+                    <div class="hearing-title">
+                        <h3>@caseItem?.Title</h3>
+                        <div class="case-meta">
+                            <span class="badge @GetStatusBadgeClass(caseItem.Status)">
+                                @caseItem.Status
+                            </span>
+                            <span class="hearing-ref">
+                                Hearing ID: #@HearingId
+                            </span>
+                        </div>
+                    </div>
+                    <div class="hearing-date">
+                        <div class="date-badge">
+                            <span class="month">@hearing.HearingDate.ToString("MMM")</span>
+                            <span class="day">@hearing.HearingDate.Day</span>
+                            <span class="year">@hearing.HearingDate.Year</span>
+                        </div>
+                        <div class="time-display">
+                            <i class="fas fa-clock"></i>
+                            <span>@hearing.HearingDate.ToString("h:mm tt")</span>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body">
-                    @if (hearing != null && caseItem != null)
-                    {
-                        <div class="hearing-detail">
-                            <div class="hearing-detail-header">
-                                <h4>@caseItem.Title</h4>
-                                <span class="badge @GetStatusBadgeClass(caseItem.Status)">
-                                    @caseItem.Status
-                                </span>
+
+                <div class="hearing-body">
+                    <div class="detail-sections">
+                        <div class="detail-section">
+                            <div class="section-header">
+                                <i class="fas fa-landmark"></i>
+                                <h4>Hearing Information</h4>
                             </div>
-                            <div class="hearing-detail-body">
-                                <div class="detail-section">
-                                    <h5>Hearing Information</h5>
-                                    <div class="detail-item">
-                                        <strong>Date:</strong>
-                                        <span>@hearing.HearingDate.ToString("MMMM dd, yyyy")</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Time:</strong>
-                                        <span>@hearing.HearingDate.ToString("h:mm tt")</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Venue:</strong>
-                                        <span>@hearing.Venue</span>
-                                    </div>
-                          
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <span class="detail-label">Court Venue</span>
+                                    <span class="detail-value">@hearing.Venue</span>
                                 </div>
-                                <div class="detail-section">
-                                    <h5>Case Information</h5>
-                                    <div class="detail-item">
-                                        <strong>Title:</strong>
-                                        <span>@caseItem.Title</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Lawyer:</strong>
-                                        <span>@(lawyer?.FullName ?? "Not assigned")</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Start Date:</strong>
-                                        <span>@caseItem.StartDate.ToString("MMMM dd, yyyy")</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Status:</strong>
-                                        <span>@caseItem.Status</span>
-                                    </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Hearing Id</span>
+                                    <span class="detail-value">@hearing.HearingId</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Hearing Date</span>
+                                    <span class="detail-value">@(hearing.HearingDate.ToString() ?? "Not available")</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">OutCome</span>
+                                    <span class="detail-value">@(hearing.Outcome ?? "Not specified")</span>
                                 </div>
                             </div>
                         </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info" role="alert">
-                            Hearing or case not found
+
+                        <div class="detail-section">
+                            <div class="section-header">
+                                <i class="fas fa-file-contract"></i>
+                                <h4>Case Information</h4>
+                            </div>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <span class="detail-label">Case Title</span>
+                                    <span class="detail-value">@caseItem.Title</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Case Number</span>
+                                    <span class="detail-value">@caseItem.CaseId</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Assigned Lawyer</span>
+                                    <span class="detail-value">@(lawyer?.FullName ?? "Not assigned")</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Case Status</span>
+                                    <span class="detail-value @GetStatusTextClass(caseItem.Status)">
+                                        @caseItem.Status
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                    }
+                    </div>
                 </div>
             </div>
-        }
-    </div>
+        </div>
+    }
+</div>
 
 @code {
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
@@ -122,6 +175,9 @@
     {
         try
         {
+            isLoading = true;
+            errorMessage = null;
+
             var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
             if (!userResponse.IsSuccessStatusCode)
             {
@@ -173,14 +229,32 @@
     {
         return status switch
         {
-            CaseStatus.Open => "bg-primary",
-            CaseStatus.Closed => "bg-secondary",
-            CaseStatus.Pending => "bg-warning",
-            CaseStatus.Active => "bg-success",
-            CaseStatus.Completed => "bg-info",
-            CaseStatus.InProgress => "bg-primary",
-            _ => "bg-light text-dark"
+            CaseStatus.Open => "badge-primary",
+            CaseStatus.Closed => "badge-secondary",
+            CaseStatus.Pending => "badge-warning",
+            CaseStatus.Active => "badge-success",
+            CaseStatus.Completed => "badge-info",
+            CaseStatus.InProgress => "badge-primary",
+            _ => "badge-light"
         };
     }
 
+    private string GetStatusTextClass(CaseStatus status)
+    {
+        return status switch
+        {
+            CaseStatus.Open => "text-primary",
+            CaseStatus.Closed => "text-secondary",
+            CaseStatus.Pending => "text-warning",
+            CaseStatus.Active => "text-success",
+            CaseStatus.Completed => "text-info",
+            CaseStatus.InProgress => "text-primary",
+            _ => "text-light"
+        };
+    }
+
+    private void ReloadPage()
+    {
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
 }

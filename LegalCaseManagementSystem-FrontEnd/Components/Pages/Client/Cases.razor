@@ -138,7 +138,7 @@
             }
 
             cases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
-            filteredCases = cases; // Initialize filteredCases with all cases
+            filteredCases = cases;
 
             var tasks = new List<Task>();
             foreach (var caseItem in cases)

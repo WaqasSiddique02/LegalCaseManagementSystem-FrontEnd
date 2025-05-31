@@ -8,82 +8,186 @@
 
 <ClientHeader></ClientHeader>
 
-    <div class="dashboard-grid">
-        @if (isLoading)
-        {
-            <div class="text-center py-5">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        }
-        else if (errorMessage != null)
-        {
-            <div class="alert alert-danger" role="alert">
-                @errorMessage
-            </div>
-        }
-        else
-        {
-            <div class="content-card">
-                <div class="card-header">
-                    <h3>Pay Invoice #@invoice?.InvoiceId</h3>
-                    <a href="/client/@UserId/invoices" class="btn btn-primary btn-sm">Back to Invoices</a>
-                </div>
-                <div class="card-body">
-                    <div class="payment-details">
-                        <p><strong>Case:</strong> <span>@(caseItem?.Title ?? "Unknown")</span></p>
-                        <p><strong>Amount:</strong> <span>@invoice?.Amount.ToString("C")</span></p>
-                        <p><strong>Issued Date:</strong> <span>@invoice?.IssuedDate.ToString("MMM dd, yyyy")</span></p>
-                        <p><strong>Status:</strong> <span>@invoice?.Status</span></p>
-                    </div>
-                    <div class="alert alert-info mt-3">
-                        Please confirm your payment details below to process the payment for Invoice #@InvoiceId.
-                    </div>
-                    <div class="mt-3">
-                        <button class="btn btn-success" @onclick="OpenPaymentDialog">
-                            <i class="fas fa-credit-card"></i> Proceed to Payment
-                        </button>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-
-    @if (showPaymentDialog)
+<div class="payment-container">
+    @if (isLoading)
     {
-        <div class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4>Confirm Payment</h4>
-                    <button class="btn-close" @onclick="ClosePaymentDialog">&times;</button>
+        <div class="loading-overlay">
+            <div class="spinner-container">
+                <div class="spinner"></div>
+                <p>Loading payment details...</p>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="error-card">
+            <div class="error-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="error-content">
+                <h3>Payment Error</h3>
+                <p>@errorMessage</p>
+                <button class="btn btn-retry" @onclick="ReloadPage">
+                    <i class="fas fa-sync-alt"></i> Try Again
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="payment-header">
+            <div class="header-content">
+                <h2>Payment Authorization</h2>
+                <div class="breadcrumb">
+                    <a href="/client/@UserId">Client</a> /
+                    <a href="/client/@UserId/invoices">Invoices</a> /
+                    <span>Payment #@invoice?.InvoiceId</span>
                 </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to pay <strong>@invoice?.Amount.ToString("C")</strong> for Invoice #@InvoiceId?</p>
-                    <div class="payment-form">
-                        <div class="form-group">
-                            <label for="cardNumber">Card Number</label>
-                            <input type="text" id="cardNumber" class="form-control" placeholder="1234 5678 9012 3456" @bind="cardNumber" />
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="expiry">Expiry Date</label>
-                                <input type="text" id="expiry" class="form-control" placeholder="MM/YY" @bind="expiry" />
+            </div>
+            <div class="header-actions">
+                <a href="/client/@UserId/invoices" class="btn btn-back">
+                    <i class="fas fa-arrow-left"></i> Back to Invoices
+                </a>
+            </div>
+        </div>
+
+        <div class="payment-card">
+            <div class="payment-summary">
+                <div class="summary-header">
+                    <div class="invoice-meta">
+                        <span class="badge badge-unpaid">
+                            Payment Required
+                        </span>
+                        <span class="invoice-number">
+                            Invoice #@invoice?.InvoiceId
+                        </span>
+                    </div>
+                    <div class="invoice-amount">
+                        <span class="amount-label">Total Due</span>
+                        <span class="amount-value">@invoice?.Amount.ToString("C")</span>
+                    </div>
+                </div>
+
+                <div class="payment-details">
+                    <div class="detail-section">
+                        <h4><i class="fas fa-file-invoice"></i> Invoice Details</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Case Reference</span>
+                                <span class="detail-value">@(caseItem?.Title ?? "Not specified")</span>
                             </div>
-                            <div class="form-group">
-                                <label for="cvv">CVV</label>
-                                <input type="text" id="cvv" class="form-control" placeholder="123" @bind="cvv" />
+                            <div class="detail-item">
+                                <span class="detail-label">Issued Date</span>
+                                <span class="detail-value">@invoice?.IssuedDate.ToString("MMMM dd, yyyy")</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Case Number</span>
+                                <span class="detail-value">@(caseItem?.CaseId.ToString() ?? "Not specified")</span>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="ClosePaymentDialog">Cancel</button>
-                    <button class="btn btn-success" @onclick="ConfirmPayment">Confirm Payment</button>
+
+                    <div class="payment-notice">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Please review the invoice details and proceed to payment when ready.</p>
+                    </div>
+
+                    <button class="btn btn-pay" @onclick="OpenPaymentDialog">
+                        <i class="fas fa-lock"></i> Secure Payment
+                    </button>
                 </div>
             </div>
         </div>
     }
+
+    @if (showPaymentDialog)
+    {
+        <div class="payment-modal-overlay @(showPaymentDialog ? "active" : "")">
+            <div class="payment-modal">
+                <div class="modal-header">
+                    <div class="header-content">
+                        <i class="fas fa-lock"></i>
+                        <h3>Secure Payment Gateway</h3>
+                    </div>
+                    <button class="btn-close" @onclick="ClosePaymentDialog">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="payment-confirmation">
+                        <div class="confirmation-header">
+                            <div class="payment-amount">
+                                <span class="amount-label">Amount to Pay</span>
+                                <span class="amount">@invoice?.Amount.ToString("C")</span>
+                            </div>
+                            <div class="invoice-reference">
+                                <span>Invoice #@InvoiceId</span>
+                            </div>
+                        </div>
+
+                        <div class="payment-form">
+                            <div class="form-group">
+                                <label for="cardNumber">Card Number</label>
+                                <div class="input-with-icon">
+                                    <i class="far fa-credit-card"></i>
+                                    <input type="text" id="cardNumber" class="form-control"
+                                           placeholder="1234 5678 9012 3456" @bind="cardNumber"
+                                           @oninput="FormatCardNumber" maxlength="19" />
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="expiry">Expiration Date</label>
+                                    <div class="input-with-icon">
+                                        <i class="far fa-calendar-alt"></i>
+                                        <input type="text" id="expiry" class="form-control"
+                                               placeholder="MM/YY" @bind="expiry"
+                                               @oninput="FormatExpiry" maxlength="5" />
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cvv">Security Code</label>
+                                    <div class="input-with-icon">
+                                        <i class="fas fa-lock"></i>
+                                        <input type="password" id="cvv" class="form-control"
+                                               placeholder="•••" @bind="cvv" maxlength="4" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cardName">Name on Card</label>
+                                <div class="input-with-icon">
+                                    <i class="far fa-user"></i>
+                                    <input type="text" id="cardName" class="form-control"
+                                           placeholder="Full Name" @bind="cardName" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-cancel" @onclick="ClosePaymentDialog">
+                        Cancel Payment
+                    </button>
+                    <button class="btn btn-confirm" @onclick="ConfirmPayment" disabled="@(isProcessing)">
+                        @if (isProcessing)
+                        {
+                            <span class="spinner"></span>
+                        }
+                        else
+                        {
+                            <span>Confirm Payment</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
@@ -99,11 +203,13 @@
     private Case? caseItem;
     private Invoice? invoice;
     private bool isLoading = true;
+    private bool isProcessing = false;
     private string? errorMessage;
     private bool showPaymentDialog = false;
     private string cardNumber = "";
     private string expiry = "";
     private string cvv = "";
+    private string cardName = "";
 
     private static readonly JsonSerializerOptions jsonOptions = new()
         {
@@ -113,8 +219,16 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadInvoiceData();
+    }
+
+    private async Task LoadInvoiceData()
+    {
         try
         {
+            isLoading = true;
+            errorMessage = null;
+
             var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
             if (!userResponse.IsSuccessStatusCode)
             {
@@ -169,8 +283,6 @@
             if (invoice == null)
             {
                 errorMessage = "Invoice not found";
-                isLoading = false;
-                return;
             }
         }
         catch (Exception ex)
@@ -184,7 +296,6 @@
         }
     }
 
-
     private void OpenPaymentDialog()
     {
         showPaymentDialog = true;
@@ -196,31 +307,73 @@
         cardNumber = "";
         expiry = "";
         cvv = "";
+        cardName = "";
+    }
+
+    private void FormatCardNumber(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        value = new string(value.Where(char.IsDigit).ToArray());
+
+        if (value.Length > 16) value = value.Substring(0, 16);
+
+        var formatted = new System.Text.StringBuilder();
+        for (int i = 0; i < value.Length; i++)
+        {
+            if (i > 0 && i % 4 == 0) formatted.Append(" ");
+            formatted.Append(value[i]);
+        }
+
+        cardNumber = formatted.ToString();
+    }
+
+    private void FormatExpiry(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        value = new string(value.Where(char.IsDigit).ToArray());
+
+        if (value.Length > 4) value = value.Substring(0, 4);
+
+        if (value.Length > 2)
+        {
+            value = value.Insert(2, "/");
+        }
+
+        expiry = value;
     }
 
     private async Task ConfirmPayment()
     {
         try
         {
-            isLoading = true;
-            StateHasChanged(); 
+            isProcessing = true;
+            errorMessage = null;
 
             if (string.IsNullOrWhiteSpace(cardNumber) ||
                 string.IsNullOrWhiteSpace(expiry) ||
-                string.IsNullOrWhiteSpace(cvv))
+                string.IsNullOrWhiteSpace(cvv) ||
+                string.IsNullOrWhiteSpace(cardName))
             {
                 errorMessage = "Please fill all payment details";
-                isLoading = false;
+                isProcessing = false;
+                return;
+            }
+
+            if (invoice == null || invoice.CaseId == 0)
+            {
+                errorMessage = "Invoice data is incomplete";
+                isProcessing = false;
                 return;
             }
 
             var updateRequest = new
             {
                 InvoiceId = InvoiceId,
-                CaseId = invoice.CaseId, 
+                CaseId = invoice.CaseId,
                 Amount = invoice.Amount,
                 IssuedDate = invoice.IssuedDate,
                 Status = "Paid",
+                PaidDate = DateTime.Now
             };
 
             var response = await Http.PutAsJsonAsync(
@@ -230,27 +383,29 @@
             if (response.IsSuccessStatusCode)
             {
                 invoice.Status = "Paid";
-                errorMessage = "Payment successful! Redirecting...";
-
-                await Task.Delay(2000);
+                await Task.Delay(1000);
                 Navigation.NavigateTo($"/client/{UserId}/invoices");
             }
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                errorMessage = $"Payment failed: {response.StatusCode}";
+                errorMessage = $"Payment failed: {response.StatusCode} - {errorContent}";
                 Console.WriteLine($"API Error: {errorContent}");
             }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Payment error: {ex.Message}";
+            errorMessage = $"Payment processing error: {ex.Message}";
             Console.WriteLine(ex.ToString());
         }
         finally
         {
-            isLoading = false;
-            StateHasChanged();
+            isProcessing = false;
         }
+    }
+
+    private void ReloadPage()
+    {
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
     }
 }
