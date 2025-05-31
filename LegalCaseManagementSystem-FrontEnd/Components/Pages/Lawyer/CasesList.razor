@@ -2,6 +2,7 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Navigation
 @inject DashboardState DashboardState
+@rendermode InteractiveServer
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using LegalCaseManagementSystem_FrontEnd.Models
@@ -13,7 +14,7 @@
     <div class="content-grid">
         <div class="management-actions">
             <div class="row align-items-center">
-                <div class="col-md-4 mb-3 mb-md-0">
+                <div class="col-md-6 mb-3 mb-md-0">
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-search"></i>
@@ -21,23 +22,18 @@
                         <input type="text" class="form-control" placeholder="Search cases..." @bind="searchTerm" @bind:event="oninput" />
                     </div>
                 </div>
-                <div class="col-md-4 mb-3 mb-md-0">
+                <div class="col-md-6 mb-3 mb-md-0">
                     <div class="input-group">
                         <span class="input-group-text">
                             <i class="bi bi-filter"></i>
                         </span>
                         <select class="form-select" @bind="selectedStatus">
-                            <option value="">All</option>
+                            <option value="">All Statuses</option>
                             <option value="Open">Open</option>
                             <option value="InProgress">In Progress</option>
                             <option value="Completed">Completed</option>
                         </select>
                     </div>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <button class="btn btn-primary" @onclick="AddNewCase">
-                        <i class="fas fa-plus"></i> New Case
-                    </button>
                 </div>
             </div>
         </div>
@@ -87,12 +83,9 @@
                                     <td>@caseItem.StartDate.ToString("dd MMM yyyy")</td>
                                     <td>@(caseItem.Client?.FullName ?? "Not assigned")</td>
                                     <td>
-                                        <button class="btn btn-primary btn-sm" @onclick="() => ViewCase(caseItem.CaseId)" title="View Details">
+                                        <NavLink class="btn btn-primary btn-sm" href="@($"/lawyer/{DashboardState.LawyerId}/cases/{caseItem.CaseId}")">
                                             <i class="bi bi-eye"></i> View
-                                        </button>
-                                        <button class="btn btn-outline-primary btn-sm" @onclick="() => EditCase(caseItem.CaseId)" title="Edit Case">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </button>
+                                        </NavLink>
                                     </td>
                                 </tr>
                             }
@@ -162,6 +155,7 @@
     {
         isLoading = true;
         errorMessage = null;
+        StateHasChanged(); // Force UI update to show loading state
 
         try
         {
@@ -197,22 +191,39 @@
         DashboardState.LawyerId = LawyerId;
     }
 
-    private List<Case> FilteredCases => lawyerCases
-        .Where(c => (string.IsNullOrEmpty(selectedStatus) || c.Status.ToString() == selectedStatus) &&
-                    (string.IsNullOrEmpty(searchTerm) ||
-                     c.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                     c.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                     c.Status.ToString().Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
-        .ToList();
+    private List<Case> FilteredCases
+    {
+        get
+        {
+            var filtered = lawyerCases.AsEnumerable();
+
+            if (!string.IsNullOrEmpty(selectedStatus))
+            {
+                filtered = filtered.Where(c => c.Status.ToString() == selectedStatus);
+            }
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                var term = searchTerm.Trim();
+                filtered = filtered.Where(c =>
+                    (c.Title?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (c.Description?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (c.Status.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                    (c.Client?.FullName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            return filtered.ToList();
+        }
+    }
 
     private string GetStatusBadgeClass(CaseStatus status)
     {
         return status switch
         {
-            CaseStatus.Open => "status-open",
-            CaseStatus.Completed => "status-completed",
-            CaseStatus.InProgress => "status-in-progress",
-            _ => "badge-secondary"
+            CaseStatus.Open => "bg-warning",
+            CaseStatus.Completed => "bg-success",
+            CaseStatus.InProgress => "bg-info",
+            _ => "bg-secondary"
         };
     }
 
@@ -225,21 +236,6 @@
             CaseStatus.InProgress => "In Progress",
             _ => status.ToString()
         };
-    }
-
-    private void ViewCase(int caseId)
-    {
-        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}");
-    }
-
-    private void EditCase(int caseId)
-    {
-        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/{caseId}/edit");
-    }
-
-    private void AddNewCase()
-    {
-        Navigation.NavigateTo($"/lawyer/{LawyerId}/cases/new");
     }
 
     public void Dispose()

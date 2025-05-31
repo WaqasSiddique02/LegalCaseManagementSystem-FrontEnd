@@ -1,67 +1,69 @@
-﻿/* Card Styles */
-.case-detail-card {
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    transition: transform 0.3s ease;
+﻿.dashboard-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 2rem;
 }
 
-    .case-detail-card:hover {
+.dashboard-layout {
+    width: 100%;
+    max-width: 1200px;
+}
+
+.dashboard-card {
+    background-color: var(--card-bg, #2c2f33);
+    border-radius: 12px;
+    box-shadow: var(--shadow, 0 4px 6px rgba(0, 0, 0, 0.1));
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: transform 0.3s ease;
+    color: var(--text-color, #ffffff);
+}
+
+    .dashboard-card:hover {
         transform: translateY(-5px);
     }
 
-.card-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-    .card-header h3 {
-        font-size: 1.5rem;
+    .dashboard-card h4 {
+        font-size: 1.25rem;
         font-weight: 700;
-        margin: 0;
+        margin-bottom: 1rem;
+        color: var(--text-color, #ffffff);
     }
 
-    .card-header .text-muted {
-        font-size: 0.9rem;
-    }
-
-.card-body {
-    padding: 1.5rem;
+.case-info-card {
+    width: 100%;
 }
 
-/* Tabs */
-.nav-tabs {
-    border-bottom: 1px solid var(--border-color);
+.tasks-card {
+    width: 100%;
     margin-bottom: 1.5rem;
 }
 
-.nav-item {
-    margin-right: 0.5rem;
+.info-row-container {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
-.nav-link {
-    color: var(--text-muted);
-    font-weight: 600;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px 8px 0 0;
-    transition: all 0.2s ease;
+.client-info-card,
+.lawyer-info-card {
+    flex: 1;
 }
 
-    .nav-link:hover,
-    .nav-link.active {
-        background-color: var(--primary);
-        color: white;
-        border-color: var(--primary);
-    }
+.hearings-card {
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
 
-/* Case Info */
-.case-info .info-row,
-.client-info .info-row,
-.lawyer-info .info-row {
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.info-row {
     display: flex;
     margin-bottom: 0.75rem;
 }
@@ -69,21 +71,103 @@
 .info-label {
     font-weight: 600;
     width: 150px;
-    color: var(--text-muted);
+    color: var(--text-muted, #b0b0b0);
 }
 
 .info-value {
     flex: 1;
+    color: var(--text-color, #ffffff);
 }
 
-/* Responsive */
-@media (max-width: 576px) {
-    .card-header h3 {
-        font-size: 1.25rem;
+.dashboard-card table {
+    color: var(--text-color, #ffffff) !important;
+}
+
+.dashboard-card th,
+.dashboard-card td {
+    color: var(--text-color, #ffffff) !important;
+}
+
+.dashboard-card .badge {
+    color: var(--text-color, #ffffff);
+    background-color: var(--badge-bg, #4a5568);
+}
+
+@media (max-width: 768px) {
+    .info-row-container {
+        flex-direction: column;
     }
 
-    .nav-link {
-        padding: 0.5rem 1rem;
-        font-size: 0.85rem;
+    .client-info-card,
+    .lawyer-info-card {
+        width: 100%;
     }
+
+    .dashboard-card {
+        padding: 1rem;
+    }
+
+        .dashboard-card h4 {
+            font-size: 1rem;
+        }
+
+    .info-label {
+        width: 120px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dashboard-card table {
+    border-collapse: collapse; 
+    width: 100%;
+}
+
+
+.dashboard-card th,
+.dashboard-card td {
+    border: 1px solid rgba(255, 255, 255, 0.2) !important; 
+    padding: 0.75rem; 
+}
+
+.dashboard-card th {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3) !important;
+    background-color: rgba(255, 255, 255, 0.05); 
+}
+
+
+.dashboard-card table.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.info-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); 
+    padding: 0.5rem 0;
+    margin-bottom: 0.5rem; 
+}
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+.info-label {
+    font-weight: 600;
+    width: 150px;
+    color: var(--text-muted, #b0b0b0);
+    padding-right: 1rem;
+}
+
+.info-value {
+    flex: 1;
+    color: var(--text-color, #ffffff);
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    padding-left: 1rem;
 }
