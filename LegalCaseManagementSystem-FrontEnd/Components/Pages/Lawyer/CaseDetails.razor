@@ -69,7 +69,28 @@
             <!-- Tasks Card (Beneath Case Info) -->
             <div class="dashboard-card tasks-card">
                 <h4>Tasks</h4>
-                @if (caseDetails.CaseTasks?.Any() == true)
+
+                @if (isLoading)
+                {
+                    <div class="text-center p-3">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+                else if (caseDetails == null)
+                {
+                    <div class="alert alert-warning">Case details not loaded</div>
+                }
+                else if (caseDetails.CaseTasks == null || !caseDetails.CaseTasks.Any())
+                {
+                    <div class="alert alert-info">No tasks found for this case</div>
+                }
+                else
                 {
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
@@ -98,10 +119,6 @@
                             </tbody>
                         </table>
                     </div>
-                }
-                else
-                {
-                    <p>No tasks available.</p>
                 }
             </div>
 
@@ -338,6 +355,7 @@
     {
         isLoading = true;
         errorMessage = null;
+        StateHasChanged(); // Force UI update before loading
 
         try
         {
@@ -346,11 +364,12 @@
         catch (Exception ex)
         {
             errorMessage = $"Exception loading data: {ex.Message}";
+            Console.WriteLine(errorMessage);
         }
         finally
         {
             isLoading = false;
-            StateHasChanged();
+            StateHasChanged(); // Force UI update after loading
         }
     }
 
@@ -360,6 +379,7 @@
         {
             // First attempt to load case with all related data
             var response = await Http.GetAsync($"/api/Cases/{id}?include=client,lawyer,tasks,hearings,documents,invoices");
+
             if (!response.IsSuccessStatusCode)
             {
                 // Fallback to basic case details if the include query fails
@@ -393,7 +413,9 @@
             else
             {
                 var content = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Case details with includes: {content}"); // Add this for debugging
                 caseDetails = JsonSerializer.Deserialize<Case>(content, jsonOptions);
+
                 if (caseDetails != null && caseDetails.LawyerId != LawyerId)
                 {
                     errorMessage = "Case does not belong to this lawyer.";
@@ -401,7 +423,18 @@
                     return;
                 }
 
-                // If related data is not included or empty, load them separately
+                // Explicitly check if tasks were included
+                if (caseDetails?.CaseTasks == null || !caseDetails.CaseTasks.Any())
+                {
+                    Console.WriteLine("No tasks in included data, loading separately");
+                    caseDetails.CaseTasks = await LoadTasks(id);
+                }
+                else
+                {
+                    Console.WriteLine($"Found {caseDetails.CaseTasks.Count} tasks in included data");
+                }
+
+                // Similar checks for other related data
                 if (caseDetails?.Hearings == null || !caseDetails.Hearings.Any())
                 {
                     caseDetails.Hearings = await LoadHearings(id);
@@ -416,13 +449,13 @@
                 }
             }
 
-            if (caseDetails != null)
-            {
-                caseDetails.CaseTasks ??= new List<CaseTask>();
-                caseDetails.Hearings ??= new List<Hearing>();
-                caseDetails.Documents ??= new List<Document>();
-                caseDetails.Invoices ??= new List<Invoice>();
-            }
+            // Initialize collections if null
+            caseDetails.CaseTasks ??= new List<CaseTask>();
+            caseDetails.Hearings ??= new List<Hearing>();
+            caseDetails.Documents ??= new List<Document>();
+            caseDetails.Invoices ??= new List<Invoice>();
+
+            Console.WriteLine($"Final tasks count: {caseDetails.CaseTasks.Count}"); // Debugging
         }
         catch (JsonException jsonEx)
         {
@@ -440,45 +473,32 @@
     {
         try
         {
+            Console.WriteLine($"Attempting to load tasks for case {caseId}");
             var response = await Http.GetAsync($"/api/cases/{caseId}/CaseTasks");
+            Console.WriteLine($"Response status: {response.StatusCode}");
+
+            var content = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Raw API response: {content}");
 
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Tasks API Raw Response: {content}");
-
-                // Use lenient JSON deserialization options
                 var options = new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true,
-                        AllowTrailingCommas = true,
-                        ReadCommentHandling = JsonCommentHandling.Skip
-                    };
+                {
+                    PropertyNameCaseInsensitive = true,
+                    AllowTrailingCommas = true,
+                    ReadCommentHandling = JsonCommentHandling.Skip
+                };
 
                 var tasks = JsonSerializer.Deserialize<List<CaseTask>>(content, options) ?? new List<CaseTask>();
-                Console.WriteLine($"Deserialized {tasks.Count} tasks");
-
-                // Debug: Log each task's details
-                foreach (var task in tasks)
-                {
-                    Console.WriteLine($"Task ID: {task.TaskId}, Title: {task.Title}, Status: {task.Status}, CreatedAt: {task.CreatedAt}");
-                }
-
+                Console.WriteLine($"Successfully deserialized {tasks.Count} tasks");
                 return tasks;
             }
             else
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                errorMessage = $"Failed to load tasks: {response.StatusCode} - {errorContent}";
+                errorMessage = $"Failed to load tasks: {response.StatusCode} - {content}";
                 Console.WriteLine(errorMessage);
                 return new List<CaseTask>();
             }
-        }
-        catch (JsonException jsonEx)
-        {
-            errorMessage = $"Failed to deserialize tasks: {jsonEx.Message}";
-            Console.WriteLine(errorMessage);
-            return new List<CaseTask>();
         }
         catch (Exception ex)
         {
