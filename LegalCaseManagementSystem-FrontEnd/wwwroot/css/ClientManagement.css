@@ -121,7 +121,7 @@ body {
     }
 
     .table-dark td {
-        padding: 1rem;
+        padding: 0.5rem;
         vertical-align: middle;
         color: var(--text-color);
         border-top: 1px solid var(--border-color);

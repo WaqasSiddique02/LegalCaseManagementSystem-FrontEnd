@@ -1,33 +1,34 @@
-﻿<nav class="col-md-2 d-none d-md-block sidebar">
+﻿@inject NavigationManager Navigation
+
+<nav class="col-md-2 d-none d-md-block sidebar">
     <div class="sidebar-sticky">
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link active" href="/dashboard">
+                <a class="nav-link @(IsActive("/dashboard") ? "active" : "")" href="/dashboard">
                     <i class="zmdi zmdi-widgets"></i>
                     Dashboard
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/case-management">
+                <a class="nav-link @(IsActive("/case-management") ? "active" : "")" href="/case-management">
                     <i class="zmdi zmdi-file-text"></i>
                     Cases
                 </a>
             </li>
-
             <li class="nav-item">
-                <a class="nav-link" href="/hearings-management">
+                <a class="nav-link @(IsActive("/hearings-management") ? "active" : "")" href="/hearings-management">
                     <i class="zmdi zmdi-accounts"></i>
                     Hearings
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/invoice-management">
+                <a class="nav-link @(IsActive("/invoice-management") ? "active" : "")" href="/invoice-management">
                     <i class="zmdi zmdi-chart"></i>
                     Invoice
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/documents-management">
+                <a class="nav-link @(IsActive("/documents-management") ? "active" : "")" href="/documents-management">
                     <i class="zmdi zmdi-layers"></i>
                     Documents
                 </a>
@@ -42,25 +43,25 @@
         </h6>
         <ul class="nav flex-column mb-2">
             <li class="nav-item">
-                <a class="nav-link" href="admin-management">
+                <a class="nav-link @(IsActive("/admin-management") ? "active" : "")" href="/admin-management">
                     <i class="zmdi zmdi-file-text"></i>
                     Admin
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/lawyer-management">
+                <a class="nav-link @(IsActive("/lawyer-management") ? "active" : "")" href="/lawyer-management">
                     <i class="zmdi zmdi-file-text"></i>
                     Lawyers
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/client-management">
+                <a class="nav-link @(IsActive("/client-management") ? "active" : "")" href="/client-management">
                     <i class="zmdi zmdi-file-text"></i>
                     Clients
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/users-management">
+                <a class="nav-link @(IsActive("/users-management") ? "active" : "")" href="/users-management">
                     <i class="zmdi zmdi-file-text"></i>
                     User Details
                 </a>
@@ -68,3 +69,12 @@
         </ul>
     </div>
 </nav>
+
+@code {
+    private bool IsActive(string path)
+    {
+        var currentPath = Navigation.Uri.Replace(Navigation.BaseUri, string.Empty);
+        return currentPath.Equals(path, StringComparison.OrdinalIgnoreCase) ||
+               currentPath.StartsWith(path + "/", StringComparison.OrdinalIgnoreCase);
+    }
+}
