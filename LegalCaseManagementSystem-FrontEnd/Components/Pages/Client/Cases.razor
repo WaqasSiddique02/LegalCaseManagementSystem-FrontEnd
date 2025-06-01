@@ -102,6 +102,7 @@
         try
         {
             // Fetch user
+            Console.WriteLine($"Fetching user for UserId={UserId}");
             var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
             if (!userResponse.IsSuccessStatusCode)
             {
@@ -110,21 +111,26 @@
                 return;
             }
             user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
-            Console.WriteLine($"User loaded: {user?.Username ?? "No username"}");
+            if (user == null)
+            {
+                errorMessage = "User not found for this UserId";
+                isLoading = false;
+                return;
+            }
+            Console.WriteLine($"User loaded: UserId={user.UserId}, Username={user.Username ?? "No username"}");
 
             // Fetch client by UserId
-            var clientsResponse = await Http.GetAsync($"/api/Clients?userId={UserId}");
+            Console.WriteLine($"Fetching clients");
+            var clientsResponse = await Http.GetAsync("/api/Clients");
             if (!clientsResponse.IsSuccessStatusCode)
             {
-                errorMessage = $"Error loading client: {clientsResponse.StatusCode}";
+                errorMessage = $"Error loading clients: {clientsResponse.StatusCode}";
                 isLoading = false;
                 return;
             }
 
-            var clientsJson = await clientsResponse.Content.ReadAsStringAsync();
-            Console.WriteLine($"Clients API response: {clientsJson}");
             var clients = await clientsResponse.Content.ReadFromJsonAsync<List<Client>>(jsonOptions);
-            client = clients?.FirstOrDefault();
+            client = clients?.FirstOrDefault(c => c.UserId == UserId);
 
             if (client == null)
             {
@@ -134,7 +140,8 @@
             }
             Console.WriteLine($"Client loaded: ClientId={client.ClientId}, UserId={client.UserId}, FullName={client.FullName}");
 
-            // Fetch cases by ClientId
+            // Fetch cases for this client
+            Console.WriteLine($"Fetching cases for ClientId={client.ClientId}");
             var casesResponse = await Http.GetAsync("/api/Cases");
             if (!casesResponse.IsSuccessStatusCode)
             {
@@ -162,7 +169,7 @@
         catch (Exception ex)
         {
             errorMessage = $"An error occurred: {ex.Message}";
-            Console.WriteLine(ex.ToString());
+            Console.WriteLine($"Exception in OnInitializedAsync: {ex}");
         }
         finally
         {
@@ -174,13 +181,17 @@
     {
         try
         {
-            var lawyerResponse = await Http.GetAsync($"/api/Lawyers/{lawyerId}");
+            var lawyerResponse = await Http.GetAsync($"/api/Users/{lawyerId}");
             if (lawyerResponse.IsSuccessStatusCode)
             {
-                var lawyer = await lawyerResponse.Content.ReadFromJsonAsync<Lawyer>(jsonOptions);
-                if (lawyer != null)
+                var user = await lawyerResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
+                if (user != null)
                 {
-                    lawyers[lawyerId] = lawyer;
+                    lawyers[lawyerId] = new Lawyer
+                        {
+                            UserId = user.UserId,
+                            FullName = user.Username 
+                        };
                 }
             }
             else
@@ -221,4 +232,5 @@
     {
         Navigation.NavigateTo($"/client/{UserId}/cases/{caseId}");
     }
+
 }
