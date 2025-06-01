@@ -76,7 +76,6 @@
     }
 </div>
 
-
 @code {
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
 
@@ -102,6 +101,7 @@
     {
         try
         {
+            // Fetch user
             var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
             if (!userResponse.IsSuccessStatusCode)
             {
@@ -110,7 +110,9 @@
                 return;
             }
             user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
+            Console.WriteLine($"User loaded: {user?.Username ?? "No username"}");
 
+            // Fetch client by UserId
             var clientsResponse = await Http.GetAsync($"/api/Clients?userId={UserId}");
             if (!clientsResponse.IsSuccessStatusCode)
             {
@@ -119,6 +121,8 @@
                 return;
             }
 
+            var clientsJson = await clientsResponse.Content.ReadAsStringAsync();
+            Console.WriteLine($"Clients API response: {clientsJson}");
             var clients = await clientsResponse.Content.ReadFromJsonAsync<List<Client>>(jsonOptions);
             client = clients?.FirstOrDefault();
 
@@ -128,8 +132,10 @@
                 isLoading = false;
                 return;
             }
+            Console.WriteLine($"Client loaded: ClientId={client.ClientId}, UserId={client.UserId}, FullName={client.FullName}");
 
-            var casesResponse = await Http.GetAsync($"/api/Cases?clientId={client.UserId}");
+            // Fetch cases by ClientId
+            var casesResponse = await Http.GetAsync("/api/Cases");
             if (!casesResponse.IsSuccessStatusCode)
             {
                 errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
@@ -137,9 +143,12 @@
                 return;
             }
 
-            cases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
+            var allCases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
+            cases = allCases.Where(c => c.ClientId == client.ClientId).ToList();
             filteredCases = cases;
+            Console.WriteLine($"Found {cases.Count} cases for ClientId={client.ClientId}");
 
+            // Load lawyers for the cases
             var tasks = new List<Task>();
             foreach (var caseItem in cases)
             {
@@ -174,6 +183,10 @@
                     lawyers[lawyerId] = lawyer;
                 }
             }
+            else
+            {
+                Console.WriteLine($"Failed to load lawyer {lawyerId}: {lawyerResponse.StatusCode}");
+            }
         }
         catch (Exception ex)
         {
@@ -203,7 +216,6 @@
             : cases.Where(c => c.Status.ToString() == filterStatus).ToList();
         StateHasChanged();
     }
-
 
     private void ViewCase(int caseId)
     {

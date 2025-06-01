@@ -211,6 +211,7 @@
         </div>
     }
 </div>
+
 @code {
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
 
@@ -245,6 +246,8 @@
     {
         try
         {
+            // Fetch user
+            Console.WriteLine($"Fetching user for UserId={UserId}");
             var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
             if (!userResponse.IsSuccessStatusCode)
             {
@@ -252,18 +255,28 @@
                 isLoading = false;
                 return;
             }
-            user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
 
-            var clientsResponse = await Http.GetAsync($"/api/Clients?userId={UserId}");
+            user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
+            if (user == null)
+            {
+                errorMessage = "User not found for this UserId";
+                isLoading = false;
+                return;
+            }
+            Console.WriteLine($"User loaded: UserId={user.UserId}, Username={user.Username ?? "No username"}");
+
+            // Fetch client by UserId
+            Console.WriteLine($"Fetching clients");
+            var clientsResponse = await Http.GetAsync("/api/Clients");
             if (!clientsResponse.IsSuccessStatusCode)
             {
-                errorMessage = $"Error loading client: {clientsResponse.StatusCode}";
+                errorMessage = $"Error loading clients: {clientsResponse.StatusCode}";
                 isLoading = false;
                 return;
             }
 
             var clients = await clientsResponse.Content.ReadFromJsonAsync<List<Client>>(jsonOptions);
-            client = clients?.FirstOrDefault();
+            client = clients?.FirstOrDefault(c => c.UserId == UserId);
 
             if (client == null)
             {
@@ -271,8 +284,11 @@
                 isLoading = false;
                 return;
             }
+            Console.WriteLine($"Client loaded: ClientId={client.ClientId}, UserId={client.UserId}, FullName={client.FullName}");
 
-            var casesResponse = await Http.GetAsync($"/api/Cases?clientId={client.UserId}");
+            // Fetch cases for this client
+            Console.WriteLine($"Fetching cases for ClientId={client.ClientId}");
+            var casesResponse = await Http.GetAsync("/api/Cases");
             if (!casesResponse.IsSuccessStatusCode)
             {
                 errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
@@ -280,7 +296,9 @@
                 return;
             }
 
-            cases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
+            var allCases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
+            cases = allCases.Where(c => c.ClientId == client.ClientId).ToList();
+            Console.WriteLine($"Found {cases.Count} cases for ClientId={client.ClientId}");
 
             activeCasesCount = cases.Count(c => c.Status == CaseStatus.Open || c.Status == CaseStatus.InProgress);
 
@@ -312,7 +330,7 @@
         catch (Exception ex)
         {
             errorMessage = $"An error occurred: {ex.Message}";
-            Console.WriteLine(ex.ToString());
+            Console.WriteLine($"Exception in OnInitializedAsync: {ex}");
         }
         finally
         {
@@ -324,36 +342,52 @@
     {
         try
         {
-            var caseItem = cases.First(c => c.CaseId == caseId);
+            var caseItem = cases.FirstOrDefault(c => c.CaseId == caseId);
+            if (caseItem == null)
+            {
+                Console.WriteLine($"Case {caseId} not found in loaded cases");
+                return;
+            }
+
+            // Verify case belongs to our client
+            if (caseItem.ClientId != client!.ClientId)
+            {
+                Console.WriteLine($"Case {caseId} does not belong to client {client.ClientId}");
+                return;
+            }
+
+            // Fetch lawyer details
             if (!lawyers.ContainsKey(caseItem.LawyerId))
             {
-                var lawyerResponse = await Http.GetAsync($"/api/Lawyers/{caseItem.LawyerId}");
+                var lawyerResponse = await Http.GetAsync($"/api/Users/{caseItem.LawyerId}");
                 if (lawyerResponse.IsSuccessStatusCode)
                 {
-                    var lawyer = await lawyerResponse.Content.ReadFromJsonAsync<Lawyer>(jsonOptions);
+                    var lawyer = await lawyerResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
                     if (lawyer != null)
                     {
-                        lawyers[caseItem.LawyerId] = lawyer;
+                        lawyers[caseItem.LawyerId] = new Lawyer
+                            {
+                                UserId = lawyer.UserId,
+                                FullName = lawyer.Username // Assuming username is used as full name for lawyers
+                            };
                     }
                 }
             }
 
-            var docsResponse = await Http.GetAsync($"/api/cases/{caseId}/Documents");
-            if (docsResponse.IsSuccessStatusCode)
-            {
-                documents[caseId] = await docsResponse.Content.ReadFromJsonAsync<List<Document>>(jsonOptions) ?? new List<Document>();
-            }
-
+            // Fetch hearings for this case
             var hearingsResponse = await Http.GetAsync($"/api/cases/{caseId}/Hearings");
             if (hearingsResponse.IsSuccessStatusCode)
             {
-                hearings[caseId] = await hearingsResponse.Content.ReadFromJsonAsync<List<Hearing>>(jsonOptions) ?? new List<Hearing>();
+                var caseHearings = await hearingsResponse.Content.ReadFromJsonAsync<List<Hearing>>(jsonOptions) ?? new List<Hearing>();
+                hearings[caseId] = caseHearings.Where(h => h.CaseId == caseId).ToList();
             }
 
+            // Fetch invoices for this case
             var invoicesResponse = await Http.GetAsync($"/api/cases/{caseId}/Invoices");
             if (invoicesResponse.IsSuccessStatusCode)
             {
-                invoices[caseId] = await invoicesResponse.Content.ReadFromJsonAsync<List<Invoice>>(jsonOptions) ?? new List<Invoice>();
+                var caseInvoices = await invoicesResponse.Content.ReadFromJsonAsync<List<Invoice>>(jsonOptions) ?? new List<Invoice>();
+                invoices[caseId] = caseInvoices.Where(i => i.CaseId == caseId).ToList();
             }
         }
         catch (Exception ex)
@@ -388,7 +422,6 @@
         };
     }
 
-
     private void NavigateToCases()
     {
         Navigation.NavigateTo($"/client/{UserId}/cases");
@@ -418,4 +451,5 @@
     {
         Navigation.NavigateTo($"/client/{UserId}/invoices/{invoiceId}/pay");
     }
+
 }

@@ -1,0 +1,155 @@
+﻿/* All Hearings Page Styles */
+.all-hearings-container {
+    padding: 2rem;
+    background-color: #121212;
+    color: #e0e0e0;
+    min-height: 100vh;
+}
+
+.hearings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #333;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.dark-select {
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #444;
+}
+
+    .dark-select:focus {
+        background-color: #444;
+        color: #fff;
+        border-color: #555;
+        box-shadow: 0 0 0 0.25rem rgba(100, 100, 100, 0.25);
+    }
+
+.hearings-table-container {
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.hearings-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .hearings-table th {
+        background-color: #2d2d2d;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    .hearings-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #333;
+    }
+
+    .hearings-table tr:hover {
+        background-color: #2a2a2a;
+    }
+
+.case-link {
+    color: #4dabf7;
+    text-decoration: none;
+}
+
+    .case-link:hover {
+        text-decoration: underline;
+    }
+
+.hearing-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-upcoming {
+    background-color: rgba(77, 171, 247, 0.2);
+    color: #4dabf7;
+}
+
+.status-past {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+}
+
+.btn-action {
+    background-color: transparent;
+    color: #4dabf7;
+    border: 1px solid #4dabf7;
+    margin-right: 0.5rem;
+}
+
+    .btn-action:hover {
+        background-color: rgba(77, 171, 247, 0.1);
+    }
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: #2d2d2d;
+}
+
+.btn-pagination {
+    background-color: #333;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+}
+
+    .btn-pagination:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+.loading-container,
+.error-container,
+.no-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    margin-top: 2rem;
+}
+
+    .loading-container i,
+    .error-container i,
+    .no-results i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #4dabf7;
+    }
+
+    .error-container i {
+        color: #e63946;
+    }
+
+    .no-results i {
+        color: #6c757d;
+    }

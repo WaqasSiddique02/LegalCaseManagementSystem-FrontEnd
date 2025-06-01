@@ -2,9 +2,9 @@
 {
     public enum CaseStatus
     {
-        Open,    // 0
-        Closed,  // 1
-        Pending,  // 2
+        Open, 
+        Closed,  
+        Pending,  
         Active,
         Completed,
         InProgress,

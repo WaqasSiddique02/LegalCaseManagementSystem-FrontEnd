@@ -1,55 +1,290 @@
-﻿@using LegalCaseManagementSystem_FrontEnd.Models
+﻿@page "/lawyer/{userId:int}/hearings"
+@using LegalCaseManagementSystem_FrontEnd.Models
 @using LegalCaseManagementSystem_FrontEnd.Services
-@inject DashboardState DashboardState
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using System.Net
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
-@implements IDisposable
 
-<div class="hearings-card">
-    <div class="card-header">
-        <h3>Upcoming Hearings</h3>
-        <button class="btn btn-sm btn-primary" @onclick="OnShowAllHearings">
-            View All
-        </button>
+<LawyerHeader></LawyerHeader>
+
+<div class="all-hearings-container">
+    <div class="hearings-header">
+        <h1>All Hearings</h1>
+        <div class="header-actions">
+            <div class="filter-controls">
+                <select class="form-select dark-select" @bind="selectedFilter">
+                    <option value="all">All Hearings</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="past">Past</option>
+                </select>
+                <button class="btn btn-primary" @onclick="ApplyFilters">
+                    <i class="fas fa-filter"></i> Apply
+                </button>
+            </div>
+        </div>
     </div>
-    <div class="hearings-list">
-            @if (DashboardState.UpcomingHearings.Any())
-            {
-                @foreach (var hearing in DashboardState.UpcomingHearings.OrderBy(h => h.HearingDate).Take(3))
-                {
-                    <div class="hearing-item">
-                        <div class="hearing-date">
-                            <span class="day">@hearing.HearingDate.ToString("dd")</span>
-                            <span class="month">@hearing.HearingDate.ToString("MMM")</span>
-                        </div>
-                        <div class="hearing-info">
-                            <h4>@(hearing.Case?.Title ?? "Untitled Case")</h4>
-                            <p>
-                                <i class="fas fa-clock"></i> @hearing.HearingDate.ToString("h:mm tt") •
-                                <i class="fas fa-map-marker-alt"></i> @hearing.Venue
-                            </p>
-                        </div>
-                    </div>
-                }
-            }
-            else
-            {
-                <p class="text-muted text-center py-3">No upcoming hearings available.</p>
-            }
-            <p class="text-muted">Debug: @DashboardState.UpcomingHearings.Count hearings loaded.</p>
-    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading hearings...</p>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="error-container">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>@errorMessage</p>
+            <button class="btn btn-primary" @onclick="LoadHearings">Retry</button>
+        </div>
+    }
+    else if (!filteredHearings.Any())
+    {
+        <div class="no-results">
+            <i class="fas fa-calendar-times"></i>
+            <p>No hearings found</p>
+        </div>
+    }
+    else
+    {
+        <div class="hearings-table-container">
+            <table class="hearings-table">
+                <thead>
+                    <tr>
+                        <th>Case</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Venue</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var hearing in filteredHearings)
+                    {
+                        var caseItem = caseLookup.GetValueOrDefault(hearing.CaseId);
+                        <tr>
+                            <td>
+                                @if (caseItem != null)
+                                {
+                                    <a href="@($"/lawyer/{userId}/cases/{caseItem.CaseId}")" class="case-link">
+                                        @caseItem.Title
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Case not found</span>
+                                }
+                            </td>
+                            <td>@hearing.HearingDate.ToString("dd MMM yyyy")</td>
+                            <td>@hearing.HearingDate.ToString("h:mm tt")</td>
+                            <td>@hearing.Venue</td>
+                            <td>
+                                <span class="hearing-status @GetStatusClass(hearing.HearingDate)">
+                                    @GetStatusText(hearing.HearingDate)
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="pagination-controls">
+                <button class="btn btn-pagination" @onclick="PreviousPage" disabled="@(currentPage == 1)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span>Page @currentPage of @totalPages</span>
+                <button class="btn btn-pagination" @onclick="NextPage" disabled="@(currentPage == totalPages)">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
     [Parameter]
-    public EventCallback OnShowAllHearings { get; set; }
+    public int userId { get; set; }
 
-    protected override void OnInitialized()
+    private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
+    private List<Hearing> allHearings = new();
+    private List<Hearing> filteredHearings = new();
+    private Dictionary<int, Case> caseLookup = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string selectedFilter = "upcoming";
+    private int currentPage = 1;
+    private const int pageSize = 10;
+    private int totalPages = 1;
+
+    protected override async Task OnInitializedAsync()
     {
-        DashboardState.OnChange += StateHasChanged;
+        await LoadData();
     }
 
-    public void Dispose()
+    private async Task LoadData()
     {
-        DashboardState.OnChange -= StateHasChanged;
+        isLoading = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            // Clear previous data
+            allHearings.Clear();
+            caseLookup.Clear();
+
+            // Create JSON serializer options
+            var jsonOptions = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    Converters = { new JsonStringEnumConverter() }
+                };
+
+            // Load lawyer's cases
+            var casesResponse = await Http.GetAsync($"/api/Cases?lawyerId={userId}");
+            if (!casesResponse.IsSuccessStatusCode)
+            {
+                errorMessage = await GetDetailedErrorMessage(casesResponse, "cases");
+                return;
+            }
+
+            var casesContent = await casesResponse.Content.ReadAsStringAsync();
+            var lawyerCases = JsonSerializer.Deserialize<List<Case>>(casesContent, jsonOptions) ?? new();
+            caseLookup = lawyerCases.ToDictionary(c => c.CaseId, c => c);
+
+            // Load hearings for each case
+            foreach (var caseItem in lawyerCases)
+            {
+                var hearingsResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Hearings");
+                if (!hearingsResponse.IsSuccessStatusCode)
+                {
+                    errorMessage = await GetDetailedErrorMessage(hearingsResponse, $"hearings for case {caseItem.CaseId}");
+                    return;
+                }
+
+                var hearingsContent = await hearingsResponse.Content.ReadAsStringAsync();
+                var caseHearings = JsonSerializer.Deserialize<List<Hearing>>(hearingsContent, jsonOptions) ?? new();
+                allHearings.AddRange(caseHearings);
+            }
+
+            // Sort hearings by date
+            allHearings = allHearings.OrderBy(h => h.HearingDate).ToList();
+            ApplyFilters();
+        }
+        catch (HttpRequestException httpEx)
+        {
+            errorMessage = $"Network error: {httpEx.Message}";
+            Console.WriteLine($"HTTP Error: {httpEx}");
+        }
+        catch (JsonException jsonEx)
+        {
+            errorMessage = $"Data format error: {jsonEx.Message}";
+            Console.WriteLine($"JSON Error: {jsonEx}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Unexpected error: {ex.Message}";
+            Console.WriteLine($"Error: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<string> GetDetailedErrorMessage(HttpResponseMessage response, string endpoint)
+    {
+        try
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"API Error Response ({endpoint}): {content}");
+
+            return response.StatusCode switch
+            {
+                HttpStatusCode.NotFound => $"The {endpoint} endpoint was not found",
+                HttpStatusCode.Unauthorized => "You need to be logged in to access this data",
+                HttpStatusCode.Forbidden => "You don't have permission to access this data",
+                _ => $"Failed to load {endpoint} data (Status: {response.StatusCode})"
+            };
+        }
+        catch
+        {
+            return $"Failed to load {endpoint} data (Status: {response.StatusCode})";
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        var now = DateTime.UtcNow;
+        filteredHearings = selectedFilter switch
+        {
+            "upcoming" => allHearings.Where(h => h.HearingDate.ToUniversalTime() >= now).ToList(),
+            "past" => allHearings.Where(h => h.HearingDate.ToUniversalTime() < now).ToList(),
+            _ => allHearings.ToList()
+        };
+
+        currentPage = 1;
+        CalculatePagination();
+    }
+
+    private void CalculatePagination()
+    {
+        totalPages = (int)Math.Ceiling((double)filteredHearings.Count / pageSize);
+        filteredHearings = filteredHearings
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            CalculatePagination();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            CalculatePagination();
+        }
+    }
+
+    private string GetStatusClass(DateTime hearingDate)
+    {
+        return hearingDate.ToUniversalTime() >= DateTime.UtcNow ? "status-upcoming" : "status-past";
+    }
+
+    private string GetStatusText(DateTime hearingDate)
+    {
+        return hearingDate.ToUniversalTime() >= DateTime.UtcNow ? "Upcoming" : "Completed";
+    }
+
+    private void ViewHearingDetails(int hearingId)
+    {
+        Navigation.NavigateTo($"/lawyer/{userId}/hearings/{hearingId}");
+    }
+
+    private void EditHearing(int hearingId)
+    {
+        Navigation.NavigateTo($"/lawyer/{userId}/hearings/{hearingId}/edit");
+    }
+
+    private async Task LoadHearings()
+    {
+        await LoadData();
     }
 }
