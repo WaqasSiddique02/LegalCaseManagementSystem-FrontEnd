@@ -12,99 +12,81 @@
 
 <LawyerHeader></LawyerHeader>
 
-<div class="all-hearings-container">
-    <div class="hearings-header">
-        <h1>All Hearings</h1>
-        <div class="header-actions">
-            <div class="filter-controls">
-                <select class="form-select dark-select" @bind="selectedFilter">
-                    <option value="all">All Hearings</option>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="past">Past</option>
-                </select>
-                <button class="btn btn-primary" @onclick="ApplyFilters">
-                    <i class="fas fa-filter"></i> Apply
-                </button>
-            </div>
+<div class="hearings-container dark-theme">
+    <div class="header-section">
+        <h1>My Hearings</h1>
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" class="search-input" placeholder="Search hearings..." @bind="searchQuery" @oninput="FilterHearings" />
         </div>
     </div>
 
     @if (isLoading)
     {
-        <div class="loading-container">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+        <div class="loading-state">
+            <div class="spinner"></div>
             <p>Loading hearings...</p>
         </div>
     }
     else if (errorMessage != null)
     {
-        <div class="error-container">
-            <i class="fas fa-exclamation-triangle"></i>
+        <div class="error-state">
+            <i class="fas fa-exclamation-circle"></i>
             <p>@errorMessage</p>
-            <button class="btn btn-primary" @onclick="LoadHearings">Retry</button>
+            <button class="retry-btn" @onclick="LoadHearings">Retry</button>
         </div>
     }
     else if (!filteredHearings.Any())
     {
-        <div class="no-results">
+        <div class="empty-state">
             <i class="fas fa-calendar-times"></i>
             <p>No hearings found</p>
+            @if (!string.IsNullOrEmpty(searchQuery))
+            {
+                <button class="clear-search" @onclick="ClearSearch">Clear search</button>
+            }
         </div>
     }
     else
     {
-        <div class="hearings-table-container">
-            <table class="hearings-table">
-                <thead>
-                    <tr>
-                        <th>Case</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Venue</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var hearing in filteredHearings)
-                    {
-                        var caseItem = caseLookup.GetValueOrDefault(hearing.CaseId);
-                        <tr>
-                            <td>
-                                @if (caseItem != null)
-                                {
-                                    <a href="@($"/lawyer/{userId}/cases/{caseItem.CaseId}")" class="case-link">
-                                        @caseItem.Title
-                                    </a>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">Case not found</span>
-                                }
-                            </td>
-                            <td>@hearing.HearingDate.ToString("dd MMM yyyy")</td>
-                            <td>@hearing.HearingDate.ToString("h:mm tt")</td>
-                            <td>@hearing.Venue</td>
-                            <td>
-                                <span class="hearing-status @GetStatusClass(hearing.HearingDate)">
-                                    @GetStatusText(hearing.HearingDate)
-                                </span>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-
-            <div class="pagination-controls">
-                <button class="btn btn-pagination" @onclick="PreviousPage" disabled="@(currentPage == 1)">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <span>Page @currentPage of @totalPages</span>
-                <button class="btn btn-pagination" @onclick="NextPage" disabled="@(currentPage == totalPages)">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
+        <div class="hearings-grid">
+            @foreach (var hearing in filteredHearings)
+            {
+                var caseItem = caseLookup.GetValueOrDefault(hearing.CaseId);
+                <div class="hearing-card @GetStatusClass(hearing.HearingDate)">
+                    <div class="card-header">
+                        <span class="status-badge">@GetStatusText(hearing.HearingDate)</span>
+                        <span class="hearing-date">@hearing.HearingDate.ToString("MMM dd, yyyy")</span>
+                    </div>
+                    <div class="card-body">
+                        <h3>
+                            @if (caseItem != null)
+                            {
+                                <a href="@($"/lawyer/{userId}/cases/{caseItem.CaseId}")" class="case-title">
+                                    @caseItem.Title
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="case-not-found">Case not found</span>
+                            }
+                        </h3>
+                        <div class="hearing-time">
+                            <i class="far fa-clock"></i>
+                            @hearing.HearingDate.ToString("h:mm tt")
+                        </div>
+                        <div class="hearing-venue">
+                            <i class="fas fa-map-marker-alt"></i>
+                            @hearing.Venue
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="view-btn" @onclick="() => ViewHearingDetails(hearing.HearingId)">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                    </div>
+                </div>
+            }
         </div>
     }
 </div>
@@ -119,10 +101,7 @@
     private Dictionary<int, Case> caseLookup = new();
     private bool isLoading = true;
     private string? errorMessage;
-    private string selectedFilter = "upcoming";
-    private int currentPage = 1;
-    private const int pageSize = 10;
-    private int totalPages = 1;
+    private string searchQuery = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,19 +116,34 @@
 
         try
         {
-            // Clear previous data
             allHearings.Clear();
             caseLookup.Clear();
 
-            // Create JSON serializer options
             var jsonOptions = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
                     Converters = { new JsonStringEnumConverter() }
                 };
 
-            // Load lawyer's cases
-            var casesResponse = await Http.GetAsync($"/api/Cases?lawyerId={userId}");
+            // Fetch lawyer details to get lawyerId
+            var lawyerResponse = await Http.GetAsync($"/api/Lawyers?userId={userId}");
+            if (!lawyerResponse.IsSuccessStatusCode)
+            {
+                errorMessage = await GetDetailedErrorMessage(lawyerResponse, "lawyer details");
+                return;
+            }
+
+            var lawyerContent = await lawyerResponse.Content.ReadAsStringAsync();
+            var lawyers = JsonSerializer.Deserialize<List<Lawyer>>(lawyerContent, jsonOptions);
+            var lawyer = lawyers?.FirstOrDefault();
+            if (lawyer == null)
+            {
+                errorMessage = "Lawyer not found for the given user ID";
+                return;
+            }
+
+            // Fetch cases for this lawyer
+            var casesResponse = await Http.GetAsync($"/api/Cases?lawyerId={lawyer.LawyerId}");
             if (!casesResponse.IsSuccessStatusCode)
             {
                 errorMessage = await GetDetailedErrorMessage(casesResponse, "cases");
@@ -160,7 +154,7 @@
             var lawyerCases = JsonSerializer.Deserialize<List<Case>>(casesContent, jsonOptions) ?? new();
             caseLookup = lawyerCases.ToDictionary(c => c.CaseId, c => c);
 
-            // Load hearings for each case
+            // Fetch hearings for each case
             foreach (var caseItem in lawyerCases)
             {
                 var hearingsResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Hearings");
@@ -175,9 +169,8 @@
                 allHearings.AddRange(caseHearings);
             }
 
-            // Sort hearings by date
             allHearings = allHearings.OrderBy(h => h.HearingDate).ToList();
-            ApplyFilters();
+            FilterHearings();
         }
         catch (HttpRequestException httpEx)
         {
@@ -201,6 +194,45 @@
         }
     }
 
+    private void FilterHearings()
+    {
+        var filtered = allHearings;
+
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            var query = searchQuery.ToLower();
+            filtered = filtered.Where(h =>
+                (caseLookup.TryGetValue(h.CaseId, out var caseItem) &&
+                caseItem.Title.ToLower().Contains(query) ||
+                h.Venue.ToLower().Contains(query) ||
+                h.HearingDate.ToString("MMMM dd, yyyy").ToLower().Contains(query))
+            ).ToList();
+        }
+
+        filteredHearings = filtered;
+    }
+
+    private void ClearSearch()
+    {
+        searchQuery = string.Empty;
+        FilterHearings();
+    }
+
+    private string GetStatusClass(DateTime hearingDate)
+    {
+        return hearingDate.ToUniversalTime() >= DateTime.UtcNow ? "upcoming" : "past";
+    }
+
+    private string GetStatusText(DateTime hearingDate)
+    {
+        return hearingDate.ToUniversalTime() >= DateTime.UtcNow ? "Upcoming" : "Completed";
+    }
+
+    private void ViewHearingDetails(int hearingId)
+    {
+        Navigation.NavigateTo($"/lawyer/{userId}/hearings/{hearingId}");
+    }
+
     private async Task<string> GetDetailedErrorMessage(HttpResponseMessage response, string endpoint)
     {
         try
@@ -220,67 +252,6 @@
         {
             return $"Failed to load {endpoint} data (Status: {response.StatusCode})";
         }
-    }
-
-    private void ApplyFilters()
-    {
-        var now = DateTime.UtcNow;
-        filteredHearings = selectedFilter switch
-        {
-            "upcoming" => allHearings.Where(h => h.HearingDate.ToUniversalTime() >= now).ToList(),
-            "past" => allHearings.Where(h => h.HearingDate.ToUniversalTime() < now).ToList(),
-            _ => allHearings.ToList()
-        };
-
-        currentPage = 1;
-        CalculatePagination();
-    }
-
-    private void CalculatePagination()
-    {
-        totalPages = (int)Math.Ceiling((double)filteredHearings.Count / pageSize);
-        filteredHearings = filteredHearings
-            .Skip((currentPage - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-    }
-
-    private void NextPage()
-    {
-        if (currentPage < totalPages)
-        {
-            currentPage++;
-            CalculatePagination();
-        }
-    }
-
-    private void PreviousPage()
-    {
-        if (currentPage > 1)
-        {
-            currentPage--;
-            CalculatePagination();
-        }
-    }
-
-    private string GetStatusClass(DateTime hearingDate)
-    {
-        return hearingDate.ToUniversalTime() >= DateTime.UtcNow ? "status-upcoming" : "status-past";
-    }
-
-    private string GetStatusText(DateTime hearingDate)
-    {
-        return hearingDate.ToUniversalTime() >= DateTime.UtcNow ? "Upcoming" : "Completed";
-    }
-
-    private void ViewHearingDetails(int hearingId)
-    {
-        Navigation.NavigateTo($"/lawyer/{userId}/hearings/{hearingId}");
-    }
-
-    private void EditHearing(int hearingId)
-    {
-        Navigation.NavigateTo($"/lawyer/{userId}/hearings/{hearingId}/edit");
     }
 
     private async Task LoadHearings()

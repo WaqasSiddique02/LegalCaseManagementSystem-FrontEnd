@@ -2,11 +2,12 @@
 @using LegalCaseManagementSystem_FrontEnd.Models
 @using LegalCaseManagementSystem_FrontEnd.Services
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Text.Json
+@using System.Text.Json.Serialization
 @inject IHttpClientFactory HttpClientFactory
 @inject AuthenticationStateProvider AuthStateProvider
 @inject DashboardState DashboardState
 @inject NavigationManager Navigation
-@inject IJSRuntime JSRuntime
 @implements IDisposable
 
 <LawyerHeader></LawyerHeader>
@@ -169,9 +170,9 @@
             else if (lawyerHearings.Any(h => h.HearingDate >= DateTime.Now))
             {
                 @foreach (var hearing in lawyerHearings
-            .Where(h => h.HearingDate >= DateTime.Now)
-            .OrderBy(h => h.HearingDate)
-            .Take(3))
+               .Where(h => h.HearingDate >= DateTime.Now)
+               .OrderBy(h => h.HearingDate)
+               .Take(3))
                 {
                     <div class="hearing-item">
                         <div class="hearing-date">
@@ -258,7 +259,7 @@
                             <h4>@caseItem.Title</h4>
                             <p>
                                 <span class="text-muted">Client:</span> @(caseItem.Client?.FullName ?? "Not assigned")<br>
-                                <span class="text-muted">Closed:</span>
+                                <span class="text-muted">Closed:</span> @(caseItem.EndDate?.ToString("dd MMM yyyy") ?? "-")
                             </p>
                         </div>
                         <NavLink class="btn btn-primary btn-sm" href="@($"/lawyer/{DashboardState.LawyerId}/cases/{caseItem.CaseId}")">
@@ -279,41 +280,48 @@
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
     private List<Case> lawyerCases = new();
     private List<Hearing> lawyerHearings = new();
-    private List<CaseTask> lawyerTasks = new();
-    private List<Document> lawyerDocuments = new();
     private List<DashboardState.Activity> recentActivities = new();
+    private string? errorMessage;
 
     [Parameter]
     public int userId { get; set; }
 
+    private Lawyer? currentLawyer;
+
     // Stats calculations
     private int OpenCasesCount => lawyerCases.Count(c =>
-      c.Status == CaseStatus.Open ||
-      c.Status.ToString().Equals("Open", StringComparison.OrdinalIgnoreCase));
+        c.Status == CaseStatus.Open ||
+        c.Status.ToString().Equals("Open", StringComparison.OrdinalIgnoreCase));
 
     private int PendingCasesCount => lawyerCases.Count(c =>
         c.Status == CaseStatus.InProgress ||
+        c.Status == CaseStatus.Pending ||
         c.Status.ToString().Equals("InProgress", StringComparison.OrdinalIgnoreCase) ||
         c.Status.ToString().Equals("Pending", StringComparison.OrdinalIgnoreCase));
 
     private int ClosedCasesCount => lawyerCases.Count(c =>
         c.Status == CaseStatus.Completed ||
+        c.Status == CaseStatus.Closed ||
         c.Status.ToString().Equals("Completed", StringComparison.OrdinalIgnoreCase) ||
         c.Status.ToString().Equals("Closed", StringComparison.OrdinalIgnoreCase));
-    private List<Case> RecentlyClosedCases => lawyerCases
-    .Where(c => c.Status == CaseStatus.Completed ||
+
+    private List<Case> RecentlyClosedCases =>
+        lawyerCases
+            .Where(c =>
+                c.Status == CaseStatus.Completed ||
+                c.Status == CaseStatus.Closed ||
                 c.Status.ToString().Equals("Completed", StringComparison.OrdinalIgnoreCase) ||
                 c.Status.ToString().Equals("Closed", StringComparison.OrdinalIgnoreCase))
-    .OrderByDescending(c => c.EndDate ?? c.StartDate)
-    .Take(5)
-    .ToList();
-    private int UpcomingHearingsCount => lawyerHearings.Count(h => h.HearingDate >= DateTime.Now);
-    private int TotalTasksCount => lawyerTasks.Count;
+            .OrderByDescending(c => c.EndDate ?? c.StartDate)
+            .Take(5)
+            .ToList();
+
+    private int UpcomingHearingsCount => lawyerHearings.Count(h => h.HearingDate > DateTime.Now);
+
     private int OpenCasesTrend => CalculateTrend(OpenCasesCount);
     private int PendingCasesTrend => CalculateTrend(PendingCasesCount);
     private int ClosedCasesTrend => CalculateTrend(ClosedCasesCount);
     private int HearingsTrend => CalculateTrend(UpcomingHearingsCount);
-    private Lawyer currentLawyer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -328,164 +336,124 @@
 
         try
         {
-            // Step 1: Fetch user details by userId
-            Console.WriteLine($"Fetching user with userId: {userId}");
+            // Fetch user details
+            Console.WriteLine($"Fetching user with UserId: {userId}");
             var userResponse = await Http.GetAsync($"/api/Users/{userId}");
             if (!userResponse.IsSuccessStatusCode)
             {
-                var errorContent = await userResponse.Content.ReadAsStringAsync();
-                DashboardState.ErrorMessage = $"Error loading user details: {userResponse.StatusCode}. Details: {errorContent}";
-                Console.WriteLine($"User API error: {errorContent}");
-                Navigation.NavigateTo("/lawyers");
+                errorMessage = $"Error loading user: {userResponse.StatusCode}";
+                DashboardState.IsLoading = false;
                 return;
             }
+            var user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
+            if (user == null)
+            {
+                errorMessage = "User not found for this UserId";
+                DashboardState.IsLoading = false;
+                return;
+            }
+            Console.WriteLine($"User loaded: UserId={user.UserId}, Username={user.Username ?? "No username"}");
 
-            var userContent = await userResponse.Content.ReadAsStringAsync();
-            var user = System.Text.Json.JsonSerializer.Deserialize<User>(userContent,
-                new System.Text.Json.JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true,
-                        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
-                    });
-
-            // Step 2: Verify user is a Lawyer
+            // Verify user is a Lawyer
             if (user.Role != "Lawyer")
             {
-                DashboardState.ErrorMessage = "User is not a lawyer.";
-                Console.WriteLine($"User role error: UserId {userId} has role {user.Role}");
+                errorMessage = "User is not a lawyer.";
+                DashboardState.IsLoading = false;
                 Navigation.NavigateTo("/lawyers");
                 return;
             }
 
-            // Step 3: Fetch all lawyers to map userId to lawyerId
+            // Fetch lawyer by UserId
+            Console.WriteLine($"Fetching lawyers");
             var lawyersResponse = await Http.GetAsync("/api/Lawyers");
             if (!lawyersResponse.IsSuccessStatusCode)
             {
-                var errorContent = await lawyersResponse.Content.ReadAsStringAsync();
-                DashboardState.ErrorMessage = $"Error loading lawyers: {lawyersResponse.StatusCode}. Details: {errorContent}";
-                Console.WriteLine($"Lawyers API error: {errorContent}");
-                Navigation.NavigateTo("/lawyers");
+                errorMessage = $"Error loading lawyers: {lawyersResponse.StatusCode}";
+                DashboardState.IsLoading = false;
                 return;
             }
 
-            var lawyersContent = await lawyersResponse.Content.ReadAsStringAsync();
-            var lawyers = System.Text.Json.JsonSerializer.Deserialize<List<Lawyer>>(lawyersContent,
-                new System.Text.Json.JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true,
-                        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
-                    }) ?? new();
+            var lawyers = await lawyersResponse.Content.ReadFromJsonAsync<List<Lawyer>>(jsonOptions);
+            currentLawyer = lawyers?.FirstOrDefault(l => l.UserId == userId);
 
-            currentLawyer = lawyers.FirstOrDefault(l => l.UserId == userId);
             if (currentLawyer == null)
             {
-                DashboardState.ErrorMessage = $"No lawyer found for userId: {userId}";
-                Console.WriteLine($"Lawyer not found for userId: {userId}");
+                errorMessage = "No lawyer found for this user";
+                DashboardState.IsLoading = false;
                 Navigation.NavigateTo("/lawyers");
                 return;
             }
+            Console.WriteLine($"Lawyer loaded: LawyerId={currentLawyer.LawyerId}, UserId={currentLawyer.UserId}, FullName={currentLawyer.FullName}");
 
-            // Step 4: Set lawyer details
+            // Set lawyer details in DashboardState
             DashboardState.LawyerId = currentLawyer.LawyerId;
-            DashboardState.LawyerName = currentLawyer.FullName ?? "Lawyer";
+            DashboardState.LawyerName = currentLawyer.FullName;
 
-            // Step 5: Fetch cases for this lawyerId
-            var casesResponse = await Http.GetAsync("/api/Cases?include=client");
+            // Fetch cases for this lawyer
+            Console.WriteLine($"Fetching cases for LawyerId={currentLawyer.LawyerId}");
+            var casesResponse = await Http.GetAsync("/api/Cases");
             if (!casesResponse.IsSuccessStatusCode)
             {
-                var errorContent = await casesResponse.Content.ReadAsStringAsync();
-                DashboardState.ErrorMessage = $"Error loading cases: {casesResponse.StatusCode}. Details: {errorContent}";
-                Console.WriteLine($"Cases API error: {errorContent}");
+                errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
+                DashboardState.IsLoading = false;
                 return;
             }
 
-            var casesContent = await casesResponse.Content.ReadAsStringAsync();
-            var allCases = System.Text.Json.JsonSerializer.Deserialize<List<Case>>(casesContent,
-                new System.Text.Json.JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true,
-                        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
-                    }) ?? new();
-
+            var allCases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
             lawyerCases = allCases.Where(c => c.LawyerId == currentLawyer.LawyerId).ToList();
             DashboardState.Cases = lawyerCases;
+            Console.WriteLine($"Found {lawyerCases.Count} cases for LawyerId={currentLawyer.LawyerId}");
 
+            // Load hearings for each case
+            var tasks = new List<Task>();
             foreach (var caseItem in lawyerCases)
             {
-                // Load hearings
-                var hearingsResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Hearings");
-                if (hearingsResponse.IsSuccessStatusCode)
-                {
-                    var hearingsContent = await hearingsResponse.Content.ReadAsStringAsync();
-                    var hearings = System.Text.Json.JsonSerializer.Deserialize<List<Hearing>>(hearingsContent,
-                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-                    lawyerHearings.AddRange(hearings);
-                }
-
-                // Load tasks
-                var tasksResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Tasks");
-                if (tasksResponse.IsSuccessStatusCode)
-                {
-                    var tasksContent = await tasksResponse.Content.ReadAsStringAsync();
-                    var tasks = System.Text.Json.JsonSerializer.Deserialize<List<CaseTask>>(tasksContent,
-                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-                    lawyerTasks.AddRange(tasks);
-                }
-
-                // Load documents
-                var docsResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Documents");
-                if (docsResponse.IsSuccessStatusCode)
-                {
-                    var docsContent = await docsResponse.Content.ReadAsStringAsync();
-                    var documents = System.Text.Json.JsonSerializer.Deserialize<List<Document>>(docsContent,
-                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-                    lawyerDocuments.AddRange(documents);
-                }
-
-                // Load invoices
-                var invoicesResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Invoices");
-                if (invoicesResponse.IsSuccessStatusCode)
-                {
-                    var invoicesContent = await invoicesResponse.Content.ReadAsStringAsync();
-                    var invoices = System.Text.Json.JsonSerializer.Deserialize<List<Invoice>>(invoicesContent,
-                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
-                    DashboardState.Invoices.AddRange(invoices);
-                }
+                tasks.Add(LoadHearings(caseItem));
             }
+            await Task.WhenAll(tasks);
 
-            DashboardState.UpcomingHearings = lawyerHearings.Where(h => h.HearingDate >= DateTime.Now).ToList();
-            DashboardState.RecentTasks = lawyerTasks.OrderByDescending(t => t.CreatedAt).Take(5).ToList();
+            DashboardState.UpcomingHearings = lawyerHearings.Where(h => h.HearingDate > DateTime.Now).ToList();
             recentActivities = GenerateRecentActivities();
             DashboardState.RecentActivities = recentActivities;
-
-            DashboardState.NotifyStateChanged();
-        }
-        catch (System.Text.Json.JsonException jsonEx)
-        {
-            DashboardState.ErrorMessage = $"Data format error: {jsonEx.Message}";
-            Console.WriteLine($"JSON Error: {jsonEx}");
         }
         catch (Exception ex)
         {
-            DashboardState.ErrorMessage = $"Exception loading data: {ex.Message}";
-            Console.WriteLine($"Error: {ex}");
+            errorMessage = $"An error occurred: {ex.Message}";
+            Console.WriteLine($"Exception in LoadData: {ex}");
         }
         finally
         {
             DashboardState.IsLoading = false;
-            DashboardState.NotifyStateChanged();
+            StateHasChanged();
         }
     }
 
-    private void NavigateToCases()
+    private async Task LoadHearings(Case caseItem)
     {
-        if (DashboardState.LawyerId > 0)
+        try
         {
-            Navigation.NavigateTo($"/lawyer/{DashboardState.LawyerId}/cases");
+            // Verify case belongs to the lawyer
+            if (caseItem.LawyerId != currentLawyer!.LawyerId)
+            {
+                Console.WriteLine($"Case {caseItem.CaseId} does not belong to lawyer {currentLawyer.LawyerId}");
+                return;
+            }
+
+            // Fetch hearings
+            var hearingsResponse = await Http.GetAsync($"/api/cases/{caseItem.CaseId}/Hearings");
+            if (hearingsResponse.IsSuccessStatusCode)
+            {
+                var caseHearings = await hearingsResponse.Content.ReadFromJsonAsync<List<Hearing>>(jsonOptions) ?? new List<Hearing>();
+                lawyerHearings.AddRange(caseHearings.Where(h => h.CaseId == caseItem.CaseId));
+            }
+            else
+            {
+                Console.WriteLine($"Failed to load hearings for case {caseItem.CaseId}: {hearingsResponse.StatusCode}");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine("Cannot navigate - lawyer ID not available");
+            Console.WriteLine($"Error loading hearings for case {caseItem.CaseId}: {ex.Message}");
         }
     }
 
@@ -508,93 +476,18 @@
             }
         }
 
-        // Add activities from tasks
-        foreach (var task in lawyerTasks.OrderByDescending(t => t.CreatedAt).Take(5))
-        {
-            var caseItem = lawyerCases.FirstOrDefault(c => c.CaseId == task.CaseId);
-            if (caseItem != null)
-            {
-                activities.Add(new DashboardState.Activity
-                    {
-                        Description = task.CompletedAt.HasValue
-                            ? $"Completed task '{task.Title}' in {caseItem.Title}"
-                            : $"Assigned task '{task.Title}' in {caseItem.Title}",
-                        Timestamp = task.CompletedAt ?? task.CreatedAt,
-                        Icon = task.CompletedAt.HasValue ? "fas fa-check-circle" : "fas fa-file-alt"
-                    });
-            }
-        }
-
-        // Add activities from documents
-        foreach (var doc in lawyerDocuments.OrderByDescending(d => d.UploadedAt).Take(5))
-        {
-            var caseItem = lawyerCases.FirstOrDefault(c => c.CaseId == doc.CaseId);
-            if (caseItem != null)
-            {
-                activities.Add(new DashboardState.Activity
-                    {
-                        Description = $"Uploaded document '{doc.Title}' for {caseItem.Title}",
-                        Timestamp = doc.UploadedAt,
-                        Icon = "fas fa-file-upload"
-                    });
-            }
-        }
-
         return activities.OrderByDescending(a => a.Timestamp).ToList();
     }
 
- 
-
-    private async Task ToggleTaskCompletion(CaseTask task)
-    {
-        try
-        {
-            var updatedTask = new
-            {
-                Title = task.Title,
-                Description = task.Description,
-                Status = task.Status == "Completed" ? "Pending" : "Completed"
-            };
-
-            var response = await Http.PutAsJsonAsync($"/api/cases/{task.CaseId}/Tasks/{task.TaskId}", updatedTask);
-
-            if (response.IsSuccessStatusCode)
-            {
-                task.Status = updatedTask.Status;
-                task.CompletedAt = task.Status == "Completed" ? DateTime.Now : null;
-
-                // Refresh activities
-                recentActivities = GenerateRecentActivities();
-                DashboardState.NotifyStateChanged();
-            }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                DashboardState.ErrorMessage = $"Error updating task: {response.StatusCode}. Details: {errorContent}";
-                Console.WriteLine($"Task update error: {errorContent}");
-            }
-        }
-        catch (Exception ex)
-        {
-            DashboardState.ErrorMessage = $"Exception updating task: {ex.Message}";
-            Console.WriteLine($"Task update exception: {ex}");
-        }
-    }
-
-    private void ViewCaseDetails(int caseId)
-    {
-        if (DashboardState.LawyerId > 0)
-        {
-            Navigation.NavigateTo($"/lawyer/{DashboardState.LawyerId}/cases/{caseId}");
-        }
-    }
     private string GetStatusClass(CaseStatus status)
     {
         return status switch
         {
             CaseStatus.Open => "status-open",
             CaseStatus.Completed => "status-completed",
+            CaseStatus.Closed => "status-closed",
             CaseStatus.InProgress => "status-in-progress",
+            CaseStatus.Pending => "status-pending",
             _ => string.Empty
         };
     }
@@ -605,7 +498,9 @@
         {
             CaseStatus.Open => "Open",
             CaseStatus.Completed => "Completed",
+            CaseStatus.Closed => "Closed",
             CaseStatus.InProgress => "In Progress",
+            CaseStatus.Pending => "Pending",
             _ => status.ToString()
         };
     }
@@ -620,4 +515,10 @@
     {
         DashboardState.OnChange -= StateHasChanged;
     }
+
+    private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
 }
