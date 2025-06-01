@@ -8,80 +8,80 @@
 
 <ClientHeader></ClientHeader>
 
-    <div class="dashboard-grid">
-        @if (isLoading)
-        {
-            <div class="text-center py-5">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+<div class="dashboard-grid">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+    else
+    {
+        <div class="content-card">
+            <div class="card-header">
+                <h3>All Invoices</h3>
+                <div class="d-flex align-items-center gap-2">
+                    <select class="form-select form-select-sm" @onchange="FilterInvoices">
+                        <option value="All">All</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Unpaid">Unpaid</option>
+                    </select>
+                    <a href="/client/@UserId" class="btn btn-primary btn-sm">Back to Dashboard</a>
                 </div>
             </div>
-        }
-        else if (errorMessage != null)
-        {
-            <div class="alert alert-danger" role="alert">
-                @errorMessage
-            </div>
-        }
-        else
-        {
-            <div class="content-card">
-                <div class="card-header">
-                    <h3>All Invoices</h3>
-                    <div class="d-flex align-items-center gap-2">
-                        <select class="form-select form-select-sm" @onchange="FilterInvoices">
-                            <option value="All">All</option>
-                            <option value="Paid">Paid</option>
-                            <option value="Unpaid">Unpaid</option>
-                        </select>
-                        <a href="/client/@UserId" class="btn btn-primary btn-sm">Back to Dashboard</a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    @if (filteredInvoices.Any())
-                    {
-                        <div class="invoice-grid">
-                            @foreach (var invoice in filteredInvoices.OrderByDescending(i => i.IssuedDate))
-                            {
-                                <div class="invoice-card">
-                                    <div class="invoice-card-header">
-                                        <h4>Invoice #@invoice.InvoiceId</h4>
-                                        <span class="badge @GetInvoiceStatusBadge(invoice.Status)">
-                                            @invoice.Status
-                                        </span>
+            <div class="card-body">
+                @if (filteredInvoices.Any())
+                {
+                    <div class="invoice-grid">
+                        @foreach (var invoice in filteredInvoices.OrderByDescending(i => i.IssuedDate))
+                        {
+                            <div class="invoice-card">
+                                <div class="invoice-card-header">
+                                    <h4>Invoice #@invoice.InvoiceId</h4>
+                                    <span class="badge @GetInvoiceStatusBadge(invoice.Status)">
+                                        @invoice.Status
+                                    </span>
+                                </div>
+                                <div class="invoice-card-body">
+                                    <div class="invoice-info">
+                                        <p><strong>Case:</strong> @(cases.FirstOrDefault(c => c.CaseId == invoice.CaseId)?.Title ?? "Unknown")</p>
+                                        <p><strong>Amount:</strong> @invoice.Amount.ToString("C")</p>
+                                        <p><strong>Due Date:</strong> @invoice.IssuedDate.ToString("MMM dd, yyyy")</p>
                                     </div>
-                                    <div class="invoice-card-body">
-                                        <div class="invoice-info">
-                                            <p><strong>Case:</strong> @(cases.FirstOrDefault(c => c.CaseId == invoice.CaseId)?.Title ?? "Unknown")</p>
-                                            <p><strong>Amount:</strong> @invoice.Amount.ToString("C")</p>
-                                            <p><strong>Due Date:</strong> @invoice.IssuedDate.ToString("MMM dd, yyyy")</p>
-                                        </div>
-                                        <div class="invoice-actions">
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewInvoice(invoice.InvoiceId)">
-                                                <i class="fas fa-eye"></i> View
+                                    <div class="invoice-actions">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewInvoice(invoice.InvoiceId)">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                        @if (invoice.Status == "Unpaid")
+                                        {
+                                            <button class="btn btn-sm btn-success ms-2" @onclick="() => PayInvoice(invoice.InvoiceId)">
+                                                <i class="fas fa-credit-card"></i> Pay
                                             </button>
-                                            @if (invoice.Status == "Unpaid")
-                                            {
-                                                <button class="btn btn-sm btn-success ms-2" @onclick="() => PayInvoice(invoice.InvoiceId)">
-                                                    <i class="fas fa-credit-card"></i> Pay
-                                                </button>
-                                            }
-                                        </div>
+                                        }
                                     </div>
                                 </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-info" role="alert">
-                            No invoices found
-                        </div>
-                    }
-                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info" role="alert">
+                        No invoices found
+                    </div>
+                }
             </div>
-        }
-    </div>
+        </div>
+    }
+</div>
 
 @code {
     private HttpClient Http => HttpClientFactory.CreateClient("ApiClient");
@@ -108,6 +108,8 @@
     {
         try
         {
+            // Fetch user
+            Console.WriteLine($"Fetching user for UserId={UserId}");
             var userResponse = await Http.GetAsync($"/api/Users/{UserId}");
             if (!userResponse.IsSuccessStatusCode)
             {
@@ -116,17 +118,26 @@
                 return;
             }
             user = await userResponse.Content.ReadFromJsonAsync<User>(jsonOptions);
+            if (user == null)
+            {
+                errorMessage = "User not found for this UserId";
+                isLoading = false;
+                return;
+            }
+            Console.WriteLine($"User loaded: UserId={user.UserId}, Username={user.Username ?? "No username"}");
 
-            var clientsResponse = await Http.GetAsync($"/api/Clients?userId={UserId}");
+            // Fetch client by UserId
+            Console.WriteLine($"Fetching clients");
+            var clientsResponse = await Http.GetAsync("/api/Clients");
             if (!clientsResponse.IsSuccessStatusCode)
             {
-                errorMessage = $"Error loading client: {clientsResponse.StatusCode}";
+                errorMessage = $"Error loading clients: {clientsResponse.StatusCode}";
                 isLoading = false;
                 return;
             }
 
             var clients = await clientsResponse.Content.ReadFromJsonAsync<List<Client>>(jsonOptions);
-            client = clients?.FirstOrDefault();
+            client = clients?.FirstOrDefault(c => c.UserId == UserId);
 
             if (client == null)
             {
@@ -134,8 +145,11 @@
                 isLoading = false;
                 return;
             }
+            Console.WriteLine($"Client loaded: ClientId={client.ClientId}, UserId={client.UserId}, FullName={client.FullName}");
 
-            var casesResponse = await Http.GetAsync($"/api/Cases?clientId={client.UserId}");
+            // Fetch cases for this client
+            Console.WriteLine($"Fetching cases for ClientId={client.ClientId}");
+            var casesResponse = await Http.GetAsync("/api/Cases");
             if (!casesResponse.IsSuccessStatusCode)
             {
                 errorMessage = $"Error loading cases: {casesResponse.StatusCode}";
@@ -143,8 +157,11 @@
                 return;
             }
 
-            cases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
+            var allCases = await casesResponse.Content.ReadFromJsonAsync<List<Case>>(jsonOptions) ?? new List<Case>();
+            cases = allCases.Where(c => c.ClientId == client.ClientId).ToList();
+            Console.WriteLine($"Found {cases.Count} cases for ClientId={client.ClientId}");
 
+            // Fetch invoices for the client's cases
             var tasks = new List<Task>();
             foreach (var caseItem in cases)
             {
@@ -157,7 +174,7 @@
         catch (Exception ex)
         {
             errorMessage = $"An error occurred: {ex.Message}";
-            Console.WriteLine(ex.ToString());
+            Console.WriteLine($"Exception in OnInitializedAsync: {ex}");
         }
         finally
         {
@@ -169,11 +186,22 @@
     {
         try
         {
+            var caseItem = cases.FirstOrDefault(c => c.CaseId == caseId);
+            if (caseItem == null || caseItem.ClientId != client!.ClientId)
+            {
+                Console.WriteLine($"Case {caseId} not found or does not belong to client {client!.ClientId}");
+                return;
+            }
+
             var invoicesResponse = await Http.GetAsync($"/api/cases/{caseId}/Invoices");
             if (invoicesResponse.IsSuccessStatusCode)
             {
                 var caseInvoices = await invoicesResponse.Content.ReadFromJsonAsync<List<Invoice>>(jsonOptions) ?? new List<Invoice>();
-                invoices.AddRange(caseInvoices);
+                invoices.AddRange(caseInvoices.Where(i => i.CaseId == caseId));
+            }
+            else
+            {
+                Console.WriteLine($"Failed to load invoices for case {caseId}: {invoicesResponse.StatusCode}");
             }
         }
         catch (Exception ex)
@@ -193,7 +221,6 @@
             _ => "bg-secondary"
         };
     }
-
 
     private void ViewInvoice(int invoiceId)
     {
